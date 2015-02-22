@@ -72,9 +72,7 @@ module pattern_gen
 							&& (reg_v_count >= (V_PULSE + V_FRONTPORCH)) && (reg_v_count < (V_PULSE + V_FRONTPORCH + V_VISIBLE));
 			reg_data[7:0]   <= reg_v_count[6] ? 8'h00 : reg_h_count[7:0];
 			reg_data[15:8]  <= reg_v_count[7] ? 8'h00 : reg_h_count[7:0];
-			reg_data[23:16] <= reg_v_count[8] ? 8'h00 : reg_h_count[7:0];
-			
-			reg_data <= {$random()};
+			reg_data[23:16] <= reg_v_count[8] ? 8'h00 : reg_h_count[7:0];			
 		end
 	end
 	

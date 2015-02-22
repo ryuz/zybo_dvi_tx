@@ -21,33 +21,7 @@ module top
 	wire		reset;
 	wire		clk;
 	wire		clk_x5;
-	
-	/*
-	wire		locked;
-	
-	clkgen
-		i_clkgen
-			(
-				.CLK_IN1	(in_clk125),
-				
-				.CLK_OUT1	(clk),
-				.CLK_OUT2	(clk_x5),
-
-				.RESET		(in_reset),
-				.LOCKED		(locked)
-			);
-	
-	reg				reset = 1'b1;
-	always @(posedge clk or negedge locked ) begin
-		if ( !locked ) begin
-			reset <= 1'b1;
-		end
-		else begin
-			reset <= 1'b0;
-		end
-	end
-	*/
-	
+		
 	clkgen
 		i_clkgen
 			(
