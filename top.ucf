@@ -1,0 +1,25 @@
+
+
+NET "in_clk125" TNM_NET = in_clk125;
+TIMESPEC TS_in_clk125 = PERIOD "in_clk125" 125 MHz HIGH 50%;
+
+NET	"in_clk125" LOC = "L16" |IOSTANDARD=LVCMOS33;
+NET	"in_reset"  LOc = "R18" |IOSTANDARD=LVCMOS33;
+
+NET	"hdmi_out_en" LOC = "F17" |IOSTANDARD=LVCMOS33 ;
+
+NET	"hdmi_clk_p" LOC = "H16" |IOSTANDARD=TMDS_33 ;
+NET	"hdmi_clk_n" LOC = "H17" |IOSTANDARD=TMDS_33 ;
+
+NET	"hdmi_data_p[0]" LOC = "D19" |IOSTANDARD=TMDS_33 ;
+NET	"hdmi_data_n[0]" LOC = "D20" |IOSTANDARD=TMDS_33 ;
+NET	"hdmi_data_p[1]" LOC = "C20" |IOSTANDARD=TMDS_33 ;
+NET	"hdmi_data_n[1]" LOC = "B20" |IOSTANDARD=TMDS_33 ;
+NET	"hdmi_data_p[2]" LOC = "B19" |IOSTANDARD=TMDS_33 ;
+NET	"hdmi_data_n[2]" LOC = "A20" |IOSTANDARD=TMDS_33 ;
+
+# NET	"led[0]" LOC = "M14" |IOSTANDARD=LVCMOS33 ;
+# NET	"led[1]" LOC = "M15" |IOSTANDARD=LVCMOS33 ;
+# NET	"led[2]" LOC = "G14" |IOSTANDARD=LVCMOS33 ;
+# NET	"led[3]" LOC = "D18" |IOSTANDARD=LVCMOS33 ;
+

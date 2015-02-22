@@ -74,7 +74,7 @@ module dvi_tx
 				.clk		(clk),
 				
 				.in_de		(in_de),
-				.in_d		(in_data[23:15]),
+				.in_d		(in_data[23:16]),
 				.in_c0		(in_ctl[2]),
 				.in_c1		(in_ctl[3]),
 				
