@@ -17,10 +17,12 @@ module top
 		);
 
 	assign hdmi_out_en = 1'b1;
-		
+	
+	wire		reset;
 	wire		clk;
 	wire		clk_x5;
 	
+	/*
 	wire		locked;
 	
 	clkgen
@@ -44,6 +46,18 @@ module top
 			reset <= 1'b0;
 		end
 	end
+	*/
+	
+	clkgen
+		i_clkgen
+			(
+				.in_reset	(in_reset),
+				.in_clk		(in_clk125),
+
+				.out_reset	(reset),
+				.out_clk	(clk),
+				.out_clk_x5	(clk_x5)
+			);
 	
 	
 	wire			vsync;
@@ -54,6 +68,7 @@ module top
 	pattern_gen
 	/*
 			#(
+				// SXGA@75MHz
 				.H_SYNC			(1),
 				.H_VISIBLE		(1024),
 				.H_FRONTPORCH	(24),
