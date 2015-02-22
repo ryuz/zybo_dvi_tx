@@ -30,20 +30,23 @@ module dvi_tx_encode
 		);
 		integer		i;
 		begin
-			bit_count = 0;
+			N1 = 0;
 			for ( i = 0; i < 8; i = i + 1 ) begin
-				N1 = bit_count + {2'd0, x[i]};
+				N1 = N1 + {2'd0, x[i]};
 			end
 		end
 	endfunction
 	
 	// This operator returns the number of "0"s in argument "x"
-	function	[2:0]	n0
+	function	[2:0]	N0
 		(
 			input	[7:0]	x
 		);
-		N0 = N1(~x);
-	end
+		begin
+			N0 = N1(~x);
+		end
+	endfunction
+	
 	
 	// encode xor
 	function	[8:0]	encode_xor
@@ -112,10 +115,12 @@ module dvi_tx_encode
 	reg						st4_de;
 	reg						st4_c0;
 	reg						st4_c1;
-	reg				[7:0]	st4_q_out;
+	reg				[9:0]	st4_q_out;
 	reg		signed	[4:0]	st4_cnt;
 	
 	reg				[9:0]	st5_d;
+	
+	integer					flg;
 	
 	always @(posedge clk) begin
 		if ( reset ) begin
@@ -140,57 +145,61 @@ module dvi_tx_encode
 			st4_c0    <= 1'b0;
 			st4_c1    <= 1'b0;
 			st4_q_out <= {10{1'bx}};
-			st4_cnt   <= 0;
+			st4_cnt   <= {5{1'bx}};
 			
 			st5_d     <= 10'b1101010100;
 		end
 		else begin
 			// stage 1 (bit count)
 			st1_de  <= st0_de;
-			st1_d   <= st0_d;
-			st1_n_d <= ((N1(st0_d) > 4) || (N1(st0_d) == 4 && st0_d[0] == 0));
 			st1_c0  <= st0_c0;
 			st1_c1  <= st0_c1;
+			st1_d   <= st0_d;
+			st1_n_d <= ((N1(st0_d) > 4) || (N1(st0_d) == 4 && st0_d[0] == 0));
 			
 			// stage2 (encode)
 			st2_de  <= st1_de;
-			st2_d   <= st1_d;
-			st2_q_m <= st1_n_d ? encode_xnor(st1_d) : encode_xor(st1_d);
 			st2_c0  <= st1_c0;
 			st2_c1  <= st1_c1;
+			st2_q_m <= st1_n_d ? encode_xnor(st1_d) : encode_xor(st1_d);
 			
 			// stage 3 (bit count)
 			st3_de  <= st2_de;
-			st3_q_m <= st2_q_m;
-			st3_n   <= N1(st2_q_m[7:0]) - N0(st2_q_m[7:0]);
 			st3_c0  <= st2_c0;
 			st3_c1  <= st2_c1;
+			st3_q_m <= st2_q_m;
+			st3_n   <= N1(st2_q_m[7:0]) - N0(st2_q_m[7:0]);
 			
 			// stage 4 (DC balance)
+			st4_de  <= st3_de;
+			st4_c0  <= st3_c0;
+			st4_c1  <= st3_c1;
 			if ( (st4_cnt == 0) || (st3_n == 0) ) begin
 				st4_q_out[9]   <= ~st3_q_m[8];
 				st4_q_out[8]   <= st3_q_m[8];
 				st4_q_out[7:0] <= st3_q_m[8] ? st3_q_m[7:0] : ~st3_q_m[7:0];
-				st4_cnt        <= st3_q_out[8] ? (st4_cnt + st3_n) : (st4_cnt - st3_n);
+				st4_cnt  <= st3_q_m[8] ? (st4_cnt + st3_n) : (st4_cnt - st3_n);
+				flg <= 0;
 			end
 			else begin
-				if ( (st4_cnt > 0 && st3_n > 0) || (st4_cnt < 0 && st3_n < 0) ) begin
+				if ( ((st4_cnt) > 0 && (st3_n > 0)) || ((st4_cnt < 0) && (st3_n < 0)) ) begin
 					st4_q_out[9]   <= 1'b1;
 					st4_q_out[8]   <= st3_q_m[8];
 					st4_q_out[7:0] <= ~st3_q_m[7:0];
-					st4_cnt        <= st3_cnt + 2*st3_q_m[8] - st3_n;
+					st4_cnt <= st4_cnt + {st3_q_m[8], 1'b0} - st3_n;
+				flg <= 1;
 				end
 				else begin
 					st4_q_out[9]   <= 1'b0;
 					st4_q_out[8]   <= st3_q_m[8];
 					st4_q_out[7:0] <= st3_q_m[7:0];
-					st4_cnt        <= st3_cnt - 2*(~st3_q_m[8]) + st3_n;
-					
+					st4_cnt <= st4_cnt - {~st3_q_m[8], 1'b0} + st3_n;
+				flg <= 2;
 				end
 			end
-			st4_de  <= st3_de;
-			st4_c0  <= st3_c0;
-			st4_c1  <= st3_c1;
+			if ( !st3_de ) begin
+				st4_cnt <= 0;
+			end
 			
 			// stage 5 (output)
 			if ( st4_de ) begin

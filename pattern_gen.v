@@ -22,7 +22,6 @@ module pattern_gen
 			parameter	V_FRONTPORCH = 10,
 			parameter	V_PULSE      = 2,
 			parameter	V_BACKPORCH  = 33
-
 		)
 		(
 			input	wire			reset,
@@ -49,6 +48,11 @@ module pattern_gen
 		if ( reset ) begin
 			reg_h_count <= 0;
 			reg_v_count <= 0;
+			
+			reg_vsync   <= 0;
+			reg_hsync   <= 0;
+			reg_de      <= 0;
+			reg_data    <= 0;
 		end
 		else begin
 			// counter
@@ -66,8 +70,9 @@ module pattern_gen
 			reg_vsync       <= (reg_v_count < V_PULSE) ? V_SYNC : ~V_SYNC;
 			reg_de          <= (reg_h_count >= (H_PULSE + H_FRONTPORCH)) && (reg_h_count < (H_PULSE + H_FRONTPORCH + H_VISIBLE))
 							&& (reg_v_count >= (V_PULSE + V_FRONTPORCH)) && (reg_v_count < (V_PULSE + V_FRONTPORCH + V_VISIBLE));
-			reg_data[11:0]  <= reg_h_count;
-			reg_data[23:12] <= reg_v_count;
+			reg_data[7:0]   <= reg_v_count[6] ? 8'h00 : reg_h_count[7:0];
+			reg_data[15:8]  <= reg_v_count[7] ? 8'h00 : reg_h_count[7:0];
+			reg_data[23:16] <= reg_v_count[8] ? 8'h00 : reg_h_count[7:0];
 		end
 	end
 	
