@@ -55,8 +55,8 @@ module top
 				.in_clk		(in_clk125),
 
 				.out_reset	(reset),
-				.out_clk	(clk),
-				.out_clk_x5	(clk_x5)
+				.out_clk	(clk),			//  25MHz
+				.out_clk_x5	(clk_x5)		// 125MHz
 			);
 	
 	
