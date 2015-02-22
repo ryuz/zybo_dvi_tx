@@ -24,7 +24,7 @@ module dvi_tx_encode
 		);
 	
 	// This operator returns the number of "1"s in argument "x"
-	function	[2:0]	N1
+	function	[4:0]	N1
 		(
 			input	[7:0]	x
 		);
@@ -38,7 +38,7 @@ module dvi_tx_encode
 	endfunction
 	
 	// This operator returns the number of "0"s in argument "x"
-	function	[2:0]	N0
+	function	[4:0]	N0
 		(
 			input	[7:0]	x
 		);
@@ -109,7 +109,7 @@ module dvi_tx_encode
 	reg						st3_c0;
 	reg						st3_c1;
 	reg				[8:0]	st3_q_m;
-	reg		signed	[3:0]	st3_n;
+	reg		signed	[4:0]	st3_n;
 	
 	// stage 3
 	reg						st4_de;
@@ -118,9 +118,9 @@ module dvi_tx_encode
 	reg				[9:0]	st4_q_out;
 	reg		signed	[4:0]	st4_cnt;
 	
+	// stage 5
 	reg				[9:0]	st5_d;
 	
-	integer					flg;
 	
 	always @(posedge clk) begin
 		if ( reset ) begin
@@ -139,7 +139,7 @@ module dvi_tx_encode
 			st3_c0    <= 1'b0;
 			st3_c1    <= 1'b0;
 			st3_q_m   <= {9{1'bx}};
-			st3_n     <= {4{1'bx}};
+			st3_n     <= {5{1'bx}};
 			
 			st4_de    <= 1'b0;
 			st4_c0    <= 1'b0;
@@ -179,7 +179,6 @@ module dvi_tx_encode
 				st4_q_out[8]   <= st3_q_m[8];
 				st4_q_out[7:0] <= st3_q_m[8] ? st3_q_m[7:0] : ~st3_q_m[7:0];
 				st4_cnt  <= st3_q_m[8] ? (st4_cnt + st3_n) : (st4_cnt - st3_n);
-				flg <= 0;
 			end
 			else begin
 				if ( ((st4_cnt) > 0 && (st3_n > 0)) || ((st4_cnt < 0) && (st3_n < 0)) ) begin
@@ -187,14 +186,12 @@ module dvi_tx_encode
 					st4_q_out[8]   <= st3_q_m[8];
 					st4_q_out[7:0] <= ~st3_q_m[7:0];
 					st4_cnt <= st4_cnt + {st3_q_m[8], 1'b0} - st3_n;
-				flg <= 1;
 				end
 				else begin
 					st4_q_out[9]   <= 1'b0;
 					st4_q_out[8]   <= st3_q_m[8];
 					st4_q_out[7:0] <= st3_q_m[7:0];
 					st4_cnt <= st4_cnt - {~st3_q_m[8], 1'b0} + st3_n;
-				flg <= 2;
 				end
 			end
 			if ( !st3_de ) begin
