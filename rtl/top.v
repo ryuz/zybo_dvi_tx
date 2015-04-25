@@ -92,25 +92,26 @@ module top
 	wire	[1:0]	axi4_mem00_bresp;
 	wire			axi4_mem00_bvalid;
 	wire			axi4_mem00_bready = 1;
+	
+	wire	[5:0]	axi4_mem00_arid;
 	wire	[31:0]	axi4_mem00_araddr;
 	wire	[1:0]	axi4_mem00_arburst;
 	wire	[3:0]	axi4_mem00_arcache;
-	wire	[5:0]	axi4_mem00_arid;
 	wire	[7:0]	axi4_mem00_arlen;
 	wire	[0:0]	axi4_mem00_arlock;
 	wire	[2:0]	axi4_mem00_arprot;
 	wire	[3:0]	axi4_mem00_arqos;
 	wire	[3:0]	axi4_mem00_arregion;
 	wire	[2:0]	axi4_mem00_arsize;
-	wire			axi4_mem00_arvalid = 0;
+	wire			axi4_mem00_arvalid;
 	wire			axi4_mem00_arready;
 	wire	[5:0]	axi4_mem00_rid;
 	wire	[1:0]	axi4_mem00_rresp;
 	wire	[31:0]	axi4_mem00_rdata;
 	wire			axi4_mem00_rlast;
 	wire			axi4_mem00_rvalid;
-	wire			axi4_mem00_rready = 1;
-
+	wire			axi4_mem00_rready;
+	
 	ps_core
 		i_ps_core
 			(
@@ -206,13 +207,13 @@ module top
 				.FIXED_IO_ps_porb				(FIXED_IO_ps_porb),
 				.FIXED_IO_ps_srstb				(FIXED_IO_ps_srstb)
 			);
-
-
+	
+	
+	
 	// ----------------------------------------
 	//  GPO (LED)
 	// ----------------------------------------
-
-
+	
 	gpo_axi4l
 			#(
 				.WIDTH							(4)
@@ -245,32 +246,179 @@ module top
 			);
 	
 	
+	// ----------------------------------------
+	//  DMA read
+	// ----------------------------------------
+
+	wire	[0:0]			axi4s_memr_tuser;
+	wire					axi4s_memr_tlast;
+	wire	[23:0]			axi4s_memr_tdata;
+	wire					axi4s_memr_tvalid;
+	wire					axi4s_memr_tready;
+	
+	vdma_axi4_to_axi4s_core
+			#(
+				.AXI4_ID_WIDTH		(6),
+				.AXI4_ADDR_WIDTH	(32),
+				.AXI4_LEN_WIDTH		(8),
+				.AXI4_QOS_WIDTH		(4),
+				.AXI4S_USER_WIDTH	(1),
+				.AXI4S_DATA_WIDTH	(24),
+				.INDEX_WIDTH		(8),
+				.STRIDE_WIDTH		(12),
+				.H_WIDTH			(12),
+				.V_WIDTH			(12)
+			)
+		i_vdma_axi4_to_axi4s_core
+			(
+				.aresetn			(mem_aresetn),
+				.aclk				(mem_aclk),
+				
+				.enable				(1'b1),
+				.busy				(),
+				
+				.param_addr			(0),
+				.param_stride		(640),
+				.param_width		(640),
+				.param_height		(480),
+				.param_arlen		(7),
+				
+				.status_index		(),
+				.status_addr		(),
+				.status_stride		(),
+				.status_width		(),
+				.status_height		(),
+				.status_arlen		(),
+				
+				.m_axi4_arid		(axi4_mem00_arid),
+				.m_axi4_araddr		(axi4_mem00_araddr),
+				.m_axi4_arburst		(axi4_mem00_arburst),
+				.m_axi4_arcache		(axi4_mem00_arcache),
+				.m_axi4_arlen		(axi4_mem00_arlen),
+				.m_axi4_arlock		(axi4_mem00_arlock),
+				.m_axi4_arprot		(axi4_mem00_arprot),
+				.m_axi4_arqos		(axi4_mem00_arqos),
+				.m_axi4_arregion	(axi4_mem00_arregion),
+				.m_axi4_arsize		(axi4_mem00_arsize),
+				.m_axi4_arvalid		(axi4_mem00_arvalid),
+				.m_axi4_arready		(axi4_mem00_arready),
+				.m_axi4_rid			(axi4_mem00_rid),
+				.m_axi4_rresp		(axi4_mem00_rresp),
+				.m_axi4_rdata		(axi4_mem00_rdata),
+				.m_axi4_rlast		(axi4_mem00_rlast),
+				.m_axi4_rvalid		(axi4_mem00_rvalid),
+				.m_axi4_rready		(axi4_mem00_rready),
+				
+				.m_axi4s_tuser		(axi4s_memr_tuser),
+				.m_axi4s_tlast		(axi4s_memr_tlast),
+				.m_axi4s_tdata		(axi4s_memr_tdata),
+				.m_axi4s_tvalid		(axi4s_memr_tvalid),
+				.m_axi4s_tready		(axi4s_memr_tready)
+			);
+	
+	
+	wire	[0:0]			axi4s_vout_tuser;
+	wire					axi4s_vout_tlast;
+	wire	[23:0]			axi4s_vout_tdata;
+	wire					axi4s_vout_tvalid;
+	wire					axi4s_vout_tready;
+	
+	jelly_fifo_async_fwtf
+			#(
+				.DATA_WIDTH			(2+24),
+				.PTR_WIDTH			(9)
+			)
+		i_fifo_async_fwtf
+			(
+				.wr_reset			(~mem_aresetn),
+				.wr_clk				(mem_aclk),
+				.wr_data			({axi4s_memr_tuser[0], axi4s_memr_tlast, axi4s_memr_tdata}),
+				.wr_valid			(axi4s_memr_tvalid),
+				.wr_ready			(axi4s_memr_tready),
+				.wr_free_num		(),
+				
+				.rd_reset			(video_reset),
+				.rd_clk				(video_clk),
+				.rd_data			({axi4s_vout_tuser[0], axi4s_vout_tlast, axi4s_vout_tdata}),
+				.rd_valid			(axi4s_vout_tvalid),
+				.rd_ready			(axi4s_vout_tready),
+				.rd_data_num		()
+			);
+
+	wire			vout_tgen_vsync;
+	wire			vout_tgen_hsync;
+	wire			vout_tgen_de;
+	
+	pattern_gen
+		i_pattern_gen
+			(
+				.reset				(video_reset),
+				.clk				(video_clk),
+				
+				.vsync				(vout_tgen_vsync),
+				.hsync				(vout_tgen_hsync),
+				.de					(vout_tgen_de),
+				.data				()
+			);
+
+	wire			vout_vsync;
+	wire			vout_hsync;
+	wire			vout_de;
+	wire	[23:0]	vout_data;
+	wire	[3:0]	vout_ctl;
+	
+	vout_axi4s
+			#(
+				.WIDTH				(24)
+			)
+		i_vout_axi4s
+			(
+				.reset				(video_reset),
+				.clk				(video_clk),
+				
+				.s_axi4s_tuser		(axi4s_vout_tuser),
+				.s_axi4s_tlast		(axi4s_vout_tlast),
+				.s_axi4s_tdata		(axi4s_vout_tdata),
+				.s_axi4s_tvalid		(axi4s_vout_tvalid),
+				.s_axi4s_tready		(axi4s_vout_tready),
+				
+				.in_vsync			(vout_tgen_vsync),
+				.in_hsync			(vout_tgen_hsync),
+				.in_de				(vout_tgen_de),
+				.in_ctl				(4'd0),
+				
+				.out_vsync			(vout_vsync),
+				.out_hsync			(vout_hsync),
+				.out_de				(vout_de),
+				.out_data			(vout_data),
+				.out_ctl			(vout_ctl)
+			);
+	
 	
 	// ----------------------------------------
 	//  HDMI -TX
 	// ----------------------------------------
-
+	
+	/*
 	wire			vsync;
 	wire			hsync;
 	wire			de;
 	wire	[23:0]	data;
 
 	pattern_gen
-	/*
-			#(
-				// SXGA@75MHz
-				.H_SYNC			(1),
-				.H_VISIBLE		(1024),
-				.H_FRONTPORCH	(24),
-				.H_PULSE		(136),
-				.H_BACKPORCH	(144),
-				.V_SYNC			(1),
-				.V_VISIBLE		(768),
-				.V_FRONTPORCH	(3),
-				.V_PULSE		(6),
-				.V_BACKPORCH	(29)
-			)
-	*/
+//			#(
+//				// SXGA@75MHz
+//				.H_SYNC			(1),
+//				.H_VISIBLE		(1024),
+//				.H_FRONTPORCH	(24),
+//				.H_PULSE		(136),
+//				.H_BACKPORCH	(144),
+//				.V_SYNC			(1),
+//				.V_VISIBLE		(768),
+//				.V_FRONTPORCH	(3),
+//				.V_PULSE		(6),
+//				.V_BACKPORCH	(29)
+//			)
 		i_pattern_gen
 			(
 				.reset		(video_reset),
@@ -281,7 +429,8 @@ module top
 				.de			(de),
 				.data		(data)
 			);
-
+	*/
+	
 
 	assign hdmi_out_en = 1'b1;
 
@@ -292,10 +441,10 @@ module top
 				.clk		(video_clk),
 				.clk_x5		(video_clk_x5),
 
-				.in_vsync	(vsync),
-				.in_hsync	(hsync),
-				.in_de		(de),
-				.in_data	(data),
+				.in_vsync	(vout_vsync),
+				.in_hsync	(vout_hsync),
+				.in_de		(vout_de),
+				.in_data	(vout_data),
 				.in_ctl		(4'd0),
 
 				.out_clk_p	(hdmi_clk_p),
