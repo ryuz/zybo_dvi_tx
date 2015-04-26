@@ -30,8 +30,10 @@ module vdma_axi4_to_axi4s_core
 			input	wire							aclk,
 			
 			// control
-			input	wire							enable,
-			output	wire							busy,
+			input	wire							ctl_enable,
+			input	wire							ctl_update,
+			output	wire							ctl_busy,
+			output	wire	[INDEX_WIDTH-1:0]		ctl_index,
 			
 			// parameter
 			input	wire	[AXI4_ADDR_WIDTH-1:0]	param_addr,
@@ -41,12 +43,11 @@ module vdma_axi4_to_axi4s_core
 			input	wire	[AXI4_LEN_WIDTH-1:0]	param_arlen,
 			
 			// status
-			output	wire	[INDEX_WIDTH-1:0]		status_index,
-			output	wire	[AXI4_ADDR_WIDTH-1:0]	status_addr,
-			output	wire	[STRIDE_WIDTH-1:0]		status_stride,
-			output	wire	[H_WIDTH-1:0]			status_width,
-			output	wire	[V_WIDTH-1:0]			status_height,
-			output	wire	[AXI4_LEN_WIDTH-1:0]	status_arlen,
+			output	wire	[AXI4_ADDR_WIDTH-1:0]	monitor_addr,
+			output	wire	[STRIDE_WIDTH-1:0]		monitor_stride,
+			output	wire	[H_WIDTH-1:0]			monitor_width,
+			output	wire	[V_WIDTH-1:0]			monitor_height,
+			output	wire	[AXI4_LEN_WIDTH-1:0]	monitor_arlen,
 			
 			// master AXI4 (read)
 			output	wire	[AXI4_ID_WIDTH-1:0]		m_axi4_arid,
@@ -111,8 +112,8 @@ module vdma_axi4_to_axi4s_core
 	always @(posedge aclk) begin
 		if ( !aresetn ) begin
 			reg_busy         <= 1'b0;
+			reg_index        <= {INDEX_WIDTH{1'b0}};
 			
-			reg_index        <= {INDEX_WIDTH{1'b1}};
 			reg_param_addr   <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_param_stride <= {STRIDE_WIDTH{1'bx}};
 			reg_param_width  <= {H_WIDTH{1'bx}};
@@ -136,16 +137,18 @@ module vdma_axi4_to_axi4s_core
 		else begin
 			// enable
 			if ( !reg_busy ) begin
-				if ( enable ) begin
+				if ( ctl_enable ) begin
 					reg_busy         <= 1'b1;
 					reg_arbusy       <= 1'b1;
-					
 					reg_index        <= reg_index + 1'b1;
-					reg_param_addr   <= param_addr;
-					reg_param_stride <= param_stride;
-					reg_param_width  <= param_width;
-					reg_param_height <= param_height;
-					reg_param_arlen  <= param_arlen;
+					
+					if ( ctl_update ) begin
+						reg_param_addr   <= param_addr;
+						reg_param_stride <= param_stride;
+						reg_param_width  <= param_width;
+						reg_param_height <= param_height;
+						reg_param_arlen  <= param_arlen;
+					end
 				end
 			end
 			else begin
@@ -220,14 +223,14 @@ module vdma_axi4_to_axi4s_core
 		end
 	end
 	
-	assign busy            = reg_busy;
+	assign ctl_busy        = reg_busy;
+	assign ctl_index       = reg_index;
 	
-	assign status_index    = reg_index;
-	assign status_addr     = reg_param_addr;
-	assign status_stride   = reg_param_stride;
-	assign status_width    = reg_param_width;
-	assign status_height   = reg_param_height;
-	assign status_arlen    = reg_param_arlen;
+	assign monitor_addr    = reg_param_addr;
+	assign monitor_stride  = reg_param_stride;
+	assign monitor_width   = reg_param_width;
+	assign monitor_height  = reg_param_height;
+	assign monitor_arlen   = reg_param_arlen;
 	
 	assign m_axi4_arid     = {AXI4_ID_WIDTH{1'b0}};
 	assign m_axi4_araddr   = reg_araddr;
