@@ -1,0 +1,1 @@
+xmd -tcl run.tcl
