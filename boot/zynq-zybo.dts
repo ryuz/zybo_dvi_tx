@@ -334,9 +334,23 @@
 			interrupts = <0 7 4>;
 			reg = <0xf8007100 0x20>;
 		} ;
+		/*
 		myled {
 			compatible = "dglnt,myled-1.00.a";
 			reg = <0x43c30000 0x10000>;
+		} ;
+		*/
+		led@0x40021000 {
+			compatible = "generic-uio";
+			reg = < 0x40021000 0x10000>;
+		} ;
+		vdmar@0x40010000 {
+			compatible = "generic-uio";
+			reg = < 0x40010000 0x10000>;
+		} ;
+		vram@0x18000000 {
+			compatible = "generic-uio";
+			reg = < 0x18000000 0x08000000>;
 		} ;
 	} ;
 } ;
