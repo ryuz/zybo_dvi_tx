@@ -23,6 +23,7 @@ module vdma_axi4_to_axi4s
 			parameter	WB_ADR_WIDTH     = 8,
 			parameter	WB_DAT_WIDTH     = 32,
 			parameter	WB_SEL_WIDTH     = (WB_DAT_WIDTH / 8),
+			
 			parameter	INIT_CTL_CONTROL  = 2'b00,
 			parameter	INIT_PARAM_ADDR   = 32'h0000_0000,
 			parameter	INIT_PARAM_STRIDE = 1024,
@@ -80,25 +81,27 @@ module vdma_axi4_to_axi4s
 	//  Register
 	// ---------------------------------
 	
-	localparam	REGOFFSET_ID             = 32'h0000_0000;
-	localparam	REGOFFSET_VERSION        = 32'h0000_0004;
+	// register address offset
+	localparam	REGOFFSET_ID             = 32'h0000_0000 >> 2;
+	localparam	REGOFFSET_VERSION        = 32'h0000_0004 >> 2;
 	
-	localparam	REGOFFSET_CTL_CONTROL    = 32'h0000_0010;
-	localparam	REGOFFSET_CTL_STATUS     = 32'h0000_0018;
-	localparam	REGOFFSET_CTL_INDEX      = 32'h0000_001c;
+	localparam	REGOFFSET_CTL_CONTROL    = 32'h0000_0010 >> 2;
+	localparam	REGOFFSET_CTL_STATUS     = 32'h0000_0014 >> 2;
+	localparam	REGOFFSET_CTL_INDEX      = 32'h0000_001c >> 2;
 	
-	localparam	REGOFFSET_PARAM_ADDR     = 32'h0000_0020;
-	localparam	REGOFFSET_PARAM_STRIDE   = 32'h0000_0024;
-	localparam	REGOFFSET_PARAM_WIDTH    = 32'h0000_0028;
-	localparam	REGOFFSET_PARAM_HEIGHT   = 32'h0000_002c;
-	localparam	REGOFFSET_PARAM_ARLEN    = 32'h0000_0030;
+	localparam	REGOFFSET_PARAM_ADDR     = 32'h0000_0020 >> 2;
+	localparam	REGOFFSET_PARAM_STRIDE   = 32'h0000_0024 >> 2;
+	localparam	REGOFFSET_PARAM_WIDTH    = 32'h0000_0028 >> 2;
+	localparam	REGOFFSET_PARAM_HEIGHT   = 32'h0000_002c >> 2;
+	localparam	REGOFFSET_PARAM_ARLEN    = 32'h0000_0030 >> 2;
 	
-	localparam	REGOFFSET_MONITOR_ADDR   = 32'h0000_0040;
-	localparam	REGOFFSET_MONITOR_STRIDE = 32'h0000_0044;
-	localparam	REGOFFSET_MONITOR_WIDTH  = 32'h0000_0048;
-	localparam	REGOFFSET_MONITOR_HEIGHT = 32'h0000_004c;
-	localparam	REGOFFSET_MONITOR_ARLEN  = 32'h0000_0050;
+	localparam	REGOFFSET_MONITOR_ADDR   = 32'h0000_0040 >> 2;
+	localparam	REGOFFSET_MONITOR_STRIDE = 32'h0000_0044 >> 2;
+	localparam	REGOFFSET_MONITOR_WIDTH  = 32'h0000_0048 >> 2;
+	localparam	REGOFFSET_MONITOR_HEIGHT = 32'h0000_004c >> 2;
+	localparam	REGOFFSET_MONITOR_ARLEN  = 32'h0000_0050 >> 2;
 	
+	// registers
 	reg		[1:0]					reg_ctl_control;
 	wire	[0:0]					sig_ctl_status;
 	wire	[INDEX_WIDTH-1:0]		sig_ctl_index;
@@ -127,7 +130,7 @@ module vdma_axi4_to_axi4s
 			reg_param_arlen  <= INIT_PARAM_ARLEN;
 			reg_prev_index   <= 1'b0;
 		end
-		else if ( s_wb_stb_i && s_wb_we_i) begin
+		else if ( s_wb_stb_i && s_wb_we_i ) begin
 			case ( s_wb_adr_i )
 			REGOFFSET_CTL_CONTROL:	reg_ctl_control  <= s_wb_dat_i;
 			REGOFFSET_PARAM_ADDR:	reg_param_addr   <= s_wb_dat_i;

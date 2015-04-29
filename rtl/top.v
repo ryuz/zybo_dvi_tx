@@ -10,9 +10,10 @@ module top
 			output	wire			hdmi_clk_n,
 			output	wire	[2:0]	hdmi_data_p,
 			output	wire	[2:0]	hdmi_data_n,
-
+			
 			output	wire	[3:0]	led,
-
+			output	wire	[7:0]	pmod_a,
+			
 			inout	wire	[14:0]	DDR_addr,
 			inout	wire	[2:0]	DDR_ba,
 			inout	wire			DDR_cas_n,
@@ -609,8 +610,8 @@ module top
 	//  WISHBONE address decoder
 	// ----------------------------------------
 	
-	assign wb_dmar_stb_i = (wb_host_adr_o[31:12] == 20'h4001_0);
-	assign wb_gpio_stb_i = (wb_host_adr_o[31:12] == 20'h4002_1);
+	assign wb_dmar_stb_i = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4001_0);
+	assign wb_gpio_stb_i = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4002_1);
 	
 	assign wb_host_dat_i = wb_dmar_stb_i ? wb_dmar_dat_o :
 	                       wb_gpio_stb_i ? wb_gpio_dat_o :
@@ -619,6 +620,26 @@ module top
 	assign wb_host_ack_i = wb_dmar_stb_i ? wb_dmar_ack_o :
 	                       wb_gpio_stb_i ? wb_gpio_ack_o :
 	                       wb_host_stb_o;
+	
+	
+	
+	// ----------------------------------------
+	//  Debug
+	// ----------------------------------------
+	
+	reg		[7:1]		reg_pmod_a;
+	always @(posedge wb_clk_o ) begin
+		reg_pmod_a[1] <= wb_host_stb_o;
+		reg_pmod_a[2] <= wb_host_ack_i;
+		reg_pmod_a[3] <= wb_host_we_o;
+		reg_pmod_a[4] <= wb_host_sel_o[0];
+		reg_pmod_a[5] <= wb_host_sel_o[1];
+		reg_pmod_a[6] <= wb_host_adr_o[2];
+		reg_pmod_a[7] <= wb_host_adr_o[3];
+	end
+	
+	assign pmod_a[0]   = wb_clk_o;
+	assign pmod_a[7:1] = reg_pmod_a[7:1];
 	
 endmodule
 

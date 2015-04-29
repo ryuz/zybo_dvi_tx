@@ -24,6 +24,27 @@ set_property PACKAGE_PIN G14 [get_ports {led[2]}]
 set_property PACKAGE_PIN M15 [get_ports {led[1]}]
 
 
-set_max_delay -from [get_clocks clk_fpga_1] -to [get_clocks clk_fpga_2] -datapath_only  10.000
-set_max_delay -from [get_clocks clk_fpga_2] -to [get_clocks clk_fpga_1] -datapath_only  10.000
+set_max_delay -datapath_only -from [get_clocks clk_fpga_0] -to [get_clocks clk_fpga_1] 10.000
+set_max_delay -datapath_only -from [get_clocks clk_fpga_0] -to [get_clocks clk_fpga_2] 10.000
+set_max_delay -datapath_only -from [get_clocks clk_fpga_1] -to [get_clocks clk_fpga_0] 10.000
+set_max_delay -datapath_only -from [get_clocks clk_fpga_1] -to [get_clocks clk_fpga_2] 10.000
+set_max_delay -datapath_only -from [get_clocks clk_fpga_2] -to [get_clocks clk_fpga_0] 10.000
+set_max_delay -datapath_only -from [get_clocks clk_fpga_2] -to [get_clocks clk_fpga_1] 10.000
 
+
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[7]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[6]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[5]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[4]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {pmod_a[0]}]
+set_property PACKAGE_PIN N15 [get_ports {pmod_a[0]}]
+set_property PACKAGE_PIN N16 [get_ports {pmod_a[4]}]
+set_property PACKAGE_PIN L14 [get_ports {pmod_a[1]}]
+set_property PACKAGE_PIN L15 [get_ports {pmod_a[5]}]
+set_property PACKAGE_PIN K16 [get_ports {pmod_a[2]}]
+set_property PACKAGE_PIN J16 [get_ports {pmod_a[6]}]
+set_property PACKAGE_PIN K14 [get_ports {pmod_a[3]}]
+set_property PACKAGE_PIN J14 [get_ports {pmod_a[7]}]
