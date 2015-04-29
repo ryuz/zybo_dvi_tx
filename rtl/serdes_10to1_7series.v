@@ -9,6 +9,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
+
 module serdes_10to1_7series
 		(
 			input	wire			reset,
@@ -19,8 +20,9 @@ module serdes_10to1_7series
 			
 			output	wire			out_data
 		);
-	
-	
+
+`ifndef SIMULATION
+
 	wire 			shift1;
 	wire 			shift2;
 	
@@ -101,7 +103,9 @@ module serdes_10to1_7series
 				.TCE			(1'b0),
 				.RST			(reset)
 			);
-	
+
+`endif
+
 endmodule
 
 
