@@ -20,7 +20,7 @@ module vdma_axi4_to_axi4s_core
 			parameter	AXI4_QOS_WIDTH   = 4,
 			parameter	AXI4S_USER_WIDTH = 1,
 			parameter	AXI4S_DATA_WIDTH = 24,
-			parameter	STRIDE_WIDTH     = 12,
+			parameter	STRIDE_WIDTH     = 14,
 			parameter	INDEX_WIDTH      = 8,
 			parameter	H_WIDTH          = 12,
 			parameter	V_WIDTH          = 12
@@ -163,7 +163,7 @@ module vdma_axi4_to_axi4s_core
 					// frame start
 					reg_arvalid   <= 1'b1;
 					reg_araddr    <= reg_param_addr;
-					reg_addr_base <= reg_param_addr + (reg_param_stride << 2);
+					reg_addr_base <= reg_param_addr + reg_param_stride;
 					reg_arhcnt    <= reg_param_width  - (reg_param_arlen+1'b1);
 					reg_arvcnt    <= reg_param_height - 1'b1;
 					
@@ -184,7 +184,7 @@ module vdma_axi4_to_axi4s_core
 							reg_arhcnt    <= reg_param_width - (reg_param_arlen+1'b1);
 							reg_arvcnt    <= next_arvcnt;
 							reg_araddr    <= reg_addr_base;
-							reg_addr_base <= reg_addr_base + (reg_param_stride << 2);
+							reg_addr_base <= reg_addr_base + reg_param_stride;
 							
 							if ( reg_arvcnt == 0 ) begin
 								// frame end

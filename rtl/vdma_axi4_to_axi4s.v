@@ -15,8 +15,8 @@ module vdma_axi4_to_axi4s
 			parameter	AXI4_QOS_WIDTH   = 4,
 			parameter	AXI4S_USER_WIDTH = 1,
 			parameter	AXI4S_DATA_WIDTH = 24,
-			parameter	STRIDE_WIDTH     = 12,
 			parameter	INDEX_WIDTH      = 8,
+			parameter	STRIDE_WIDTH     = 14,
 			parameter	H_WIDTH          = 12,
 			parameter	V_WIDTH          = 12,
 			
@@ -26,7 +26,7 @@ module vdma_axi4_to_axi4s
 			
 			parameter	INIT_CTL_CONTROL  = 2'b00,
 			parameter	INIT_PARAM_ADDR   = 32'h0000_0000,
-			parameter	INIT_PARAM_STRIDE = 1024,
+			parameter	INIT_PARAM_STRIDE = 4096,
 			parameter	INIT_PARAM_WIDTH  = 640,
 			parameter	INIT_PARAM_HEIGHT = 480,
 			parameter	INIT_PARAM_ARLEN  = 7
