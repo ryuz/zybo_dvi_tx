@@ -69,3 +69,29 @@ void Graphics_Line(T_IMGBUF *img, int x1, int y1, int x2, int y2, T_COLOR col)
 }
 
 
+void Graphics_Circle(T_IMGBUF *img, int xc, int yc, int r, T_COLOR col)
+{
+	int x, y;
+	
+	x = r;
+	y = 0;
+	
+	while ( x >= y )
+	{
+		Graphics_SetPixel(img, xc + x, yc + y, col);
+		Graphics_SetPixel(img, xc + x, yc - y, col);
+		Graphics_SetPixel(img, xc - x, yc + y, col);
+		Graphics_SetPixel(img, xc - x, yc - y, col);
+		Graphics_SetPixel(img, xc + y, yc + x, col);
+		Graphics_SetPixel(img, xc + y, yc - x, col);
+		Graphics_SetPixel(img, xc - y, yc + x, col);
+		Graphics_SetPixel(img, xc - y, yc - x, col);
+		if ( (r -= (y++ << 1) - 1) < 0 )
+		{
+			r += (x-- - 1) << 1;
+		}
+	}
+
+}
+
+

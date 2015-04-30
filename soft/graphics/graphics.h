@@ -50,7 +50,7 @@ static inline void Graphics_SetPixel(T_IMGBUF *img, int x, int y, T_COLOR col)
 
 void Graphics_Clear(T_IMGBUF *img, T_COLOR col);
 void Graphics_Line(T_IMGBUF *img, int x1, int y1, int x2, int y2, T_COLOR col);
-
+void Graphics_Circle(T_IMGBUF *img, int xc, int yc, int r, T_COLOR col);
 
 
 #endif	/* __GRAPHICS_H__ */
