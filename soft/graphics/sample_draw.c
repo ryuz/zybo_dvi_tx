@@ -69,16 +69,34 @@ void SampleDraw(T_IMGBUF* img)
 	col.uwData = 0;
 	Graphics_Clear(img, col);
 	
+	col.uwData = 0x00ff00;
+	Graphics_Line(img, 0, 0, 640, 480, col);
+	
+	col.uwData = 0xff00ff;
+	Graphics_Circle(img, 320, 240, 100, col);
+	
 	/* •`‰æ */
 	for ( i = 0; i < 100; i++ ) {
-		int	x1, y1, x2, y2;
+		int type;
+		type = rand() % 2;
 		
-		col.uwData = rand();
-		x1 = rand() % img->uiWidth;
-		x2 = rand() % img->uiWidth;
-		y1 = rand() % img->uiHeight;
-		y2 = rand() % img->uiHeight;
-		Graphics_Line(img, x1, y1, x2, y2, col);
+		if ( type == 0 ) {
+			int	x1, y1, x2, y2;
+			col.uwData = rand();
+			x1 = rand() % img->uiWidth;
+			x2 = rand() % img->uiWidth;
+			y1 = rand() % img->uiHeight;
+			y2 = rand() % img->uiHeight;
+			Graphics_Line(img, x1, y1, x2, y2, col);
+		}
+		else {
+			int	x, y, r;
+			col.uwData = rand();
+			x = rand() % img->uiWidth;
+			y = rand() % img->uiHeight;
+			r = rand() % 200;
+			Graphics_Circle(img, x, y, r, col);
+		}
 	}
 }
 
