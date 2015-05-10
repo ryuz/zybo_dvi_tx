@@ -97,6 +97,8 @@ module vdma_axi4_to_axi4s_core
 	reg		[V_WIDTH-1:0]			reg_arvcnt;
 	wire	[H_WIDTH-1:0]			next_arhcnt = (reg_arhcnt - reg_param_arlen - 1);
 	wire	[V_WIDTH-1:0]			next_arvcnt = (reg_arvcnt - 1);
+	reg								reg_arhcnt_z;
+	reg								reg_arvcnt_z;
 	
 	// rƒ`ƒƒƒlƒ‹§Œä•Ï”
 	reg								reg_rbusy;
@@ -125,6 +127,7 @@ module vdma_axi4_to_axi4s_core
 			reg_addr_base    <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_araddr       <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_arhcnt       <= {H_WIDTH{1'bx}};
+			reg_arhcnt_z     <= 1'bx;
 			reg_arvcnt       <= {V_WIDTH{1'bx}};
 			
 			reg_rbusy        <= 1'b0;
@@ -164,7 +167,8 @@ module vdma_axi4_to_axi4s_core
 					reg_arvalid   <= 1'b1;
 					reg_araddr    <= reg_param_addr;
 					reg_addr_base <= reg_param_addr + reg_param_stride;
-					reg_arhcnt    <= reg_param_width  - (reg_param_arlen+1'b1);
+					reg_arhcnt    <=   reg_param_width  - (reg_param_arlen+1'b1);
+					reg_arhcnt_z  <= ((reg_param_width  - (reg_param_arlen+1'b1)) == 0);
 					reg_arvcnt    <= reg_param_height - 1'b1;
 					
 					reg_rbusy     <= 1'b1;
@@ -176,12 +180,14 @@ module vdma_axi4_to_axi4s_core
 				end
 				else begin
 					if ( m_axi4_arready ) begin
-						reg_araddr <= reg_araddr + ((reg_param_arlen+1'b1) << 2);
-						reg_arhcnt <= (reg_arhcnt - (reg_param_arlen+1'b1));
+						reg_araddr   <= reg_araddr + ((reg_param_arlen+1'b1) << 2);
+						reg_arhcnt   <=  next_arhcnt;
+						reg_arhcnt_z <= (next_arhcnt == 0);
 						
-						if ( reg_arhcnt == 0 ) begin
+						if ( reg_arhcnt_z ) begin
 							// line end
-							reg_arhcnt    <= reg_param_width - (reg_param_arlen+1'b1);
+							reg_arhcnt    <=  reg_param_width - (reg_param_arlen+1'b1);
+							reg_arhcnt_z  <= ((reg_param_width - (reg_param_arlen+1'b1)) == 0);
 							reg_arvcnt    <= next_arvcnt;
 							reg_araddr    <= reg_addr_base;
 							reg_addr_base <= reg_addr_base + reg_param_stride;
@@ -193,6 +199,7 @@ module vdma_axi4_to_axi4s_core
 								reg_addr_base <= {AXI4_ADDR_WIDTH{1'bx}};
 								reg_araddr    <= {AXI4_ADDR_WIDTH{1'bx}};
 								reg_arhcnt    <= {H_WIDTH{1'bx}};
+								reg_arhcnt_z  <= 1'bx;
 								reg_arvcnt    <= {V_WIDTH{1'bx}};
 							end
 						end
