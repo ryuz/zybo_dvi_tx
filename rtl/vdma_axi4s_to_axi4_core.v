@@ -22,7 +22,7 @@ module vdma_axi4s_to_axi4_core
 			parameter	AXI4_DATA_WIDTH  = (8 << AXI4_DATA_SIZE),
 			parameter	AXI4_STRB_WIDTH  = (1 << AXI4_DATA_SIZE),
 			parameter	AXI4S_USER_WIDTH = 1,
-			parameter	AXI4S_DATA_WIDTH = 24,
+			parameter	AXI4S_DATA_WIDTH = AXI4_DATA_WIDTH,
 			parameter	STRIDE_WIDTH     = 14,
 			parameter	INDEX_WIDTH      = 8,
 			parameter	H_WIDTH          = 12,
@@ -87,7 +87,7 @@ module vdma_axi4s_to_axi4_core
 	
 	// 状態管理
 	reg								reg_busy;
-	reg								reg_wait_fs;
+	reg								reg_skip;
 	
 	// シャドーレジスタ
 	reg		[INDEX_WIDTH-1:0]		reg_index;			// この変化でホストは受付確認
@@ -104,24 +104,50 @@ module vdma_axi4s_to_axi4_core
 	reg		[AXI4_ADDR_WIDTH-1:0]	reg_awaddr;
 	reg		[H_WIDTH-1:0]			reg_awhcnt;
 	reg		[V_WIDTH-1:0]			reg_awvcnt;
-	wire	[H_WIDTH-1:0]			next_awhcnt = (reg_awhcnt - reg_param_awlen - 1'b1);
-	wire	[V_WIDTH-1:0]			next_awvcnt = (reg_awvcnt - 1'b1);
+	reg								reg_awhlast;
 	
-	// rチャネル制御変数
+	wire	[H_WIDTH:0]				decrement_awhcnt = (reg_awhcnt - reg_param_awlen - 1'b1);
+	wire	[H_WIDTH-1:0]			init_awhcnt  = (reg_param_width - 1'b1) - reg_param_awlen;
+	wire							init_awhlast = 1'b0; // (reg_param_width - 1'b1) <= reg_param_awlen;
+	wire	[H_WIDTH-1:0]			next_awhcnt  = decrement_awhcnt[H_WIDTH-1:0];
+	wire							next_awhlast = decrement_awhcnt[H_WIDTH] || (decrement_awhcnt == 0);	// borrow or zero
+	
+	wire	[V_WIDTH-1:0]			init_awvcnt  = reg_param_height - 1'b1;
+	wire							init_awvlast = (reg_param_height - 1'b1) == 0;
+	wire	[V_WIDTH-1:0]			next_awvcnt  = reg_awvcnt - 1'b1;
+	wire							next_awvlast = (reg_awvcnt - 1'b1) == 0;
+	
+	
+	// wチャネル制御変数
 	reg								reg_wbusy;
 	reg								reg_wlast;
+	reg								reg_pre_wlast;
 	reg		[AXI4S_DATA_WIDTH-1:0]	reg_wdata;
 	reg								reg_wvalid;
 	reg		[AXI4_LEN_WIDTH-1:0]	reg_wlen;
 	reg		[H_WIDTH-1:0]			reg_whcnt;
+	reg								reg_whlast;
 	reg		[V_WIDTH-1:0]			reg_wvcnt;
-	wire	[H_WIDTH-1:0]			next_whcnt = (reg_whcnt - 1);
-	wire	[V_WIDTH-1:0]			next_wvcnt = (reg_wvcnt - 1);
+	reg								reg_wvlast;
+	
+	wire	[H_WIDTH:0]				decrement_whcnt = (reg_whcnt - reg_param_awlen - 1'b1);
+	wire	[H_WIDTH-1:0]			init_whcnt  = (reg_param_width - 1'b1) - reg_param_awlen;
+	wire							init_whlast = 1'b0; // (reg_param_width - 1'b1) <= reg_param_awlen;
+	wire	[H_WIDTH-1:0]			next_whcnt  = decrement_whcnt[H_WIDTH-1:0];
+	wire							next_whlast = decrement_whcnt[H_WIDTH] || (decrement_whcnt == 0);	// borrow or zero
+	
+//	wire	[H_WIDTH-1:0]			next_whcnt  = (reg_whcnt - 1'b1);
+	
+	wire	[V_WIDTH-1:0]			init_wvcnt  = (reg_param_height - 1'b1);
+	wire							init_wvlast = ((reg_param_height - 1'b1) == 0);
+	wire	[V_WIDTH-1:0]			next_wvcnt  = (reg_wvcnt - 1'b1);
+	wire							next_wvlast = ((reg_wvcnt - 1'b1) == 0);
 	
 	
 	always @(posedge aclk) begin
 		if ( !aresetn ) begin
 			reg_busy         <= 1'b0;
+			reg_skip         <= 1'b1;
 			reg_index        <= {INDEX_WIDTH{1'b0}};
 			
 			reg_param_addr   <= {AXI4_ADDR_WIDTH{1'bx}};
@@ -135,6 +161,7 @@ module vdma_axi4s_to_axi4_core
 			reg_addr_base    <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_awaddr       <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_awhcnt       <= {H_WIDTH{1'bx}};
+			reg_awhlast      <= 1'b0;
 			reg_awvcnt       <= {V_WIDTH{1'bx}};
 			
 			reg_wbusy        <= 1'b0;
@@ -143,14 +170,16 @@ module vdma_axi4s_to_axi4_core
 			reg_wvalid       <= 1'b0;
 			reg_wlen         <= {AXI4_LEN_WIDTH{1'bx}};
 			reg_whcnt        <= {H_WIDTH{1'bx}};
+			reg_whlast       <= 1'bx;
 			reg_wvcnt        <= {V_WIDTH{1'bx}};
+			reg_wvlast       <= 1'bx;
 		end
 		else begin
 			// enable
-			if ( !reg_busy || (!reg_awbusy && !reg_wbusy) ) begin
+			if ( !reg_busy || (!reg_skip && !reg_awbusy && !reg_wbusy) ) begin
 				if ( ctl_enable ) begin
 					reg_busy     <= 1'b1;
-					reg_wait_fs  <= 1'b1;
+					reg_skip     <= 1'b1;
 					reg_index    <= reg_index + 1'b1;
 					if ( ctl_update ) begin
 						reg_param_addr   <= param_addr;
@@ -162,40 +191,52 @@ module vdma_axi4s_to_axi4_core
 				end
 				else begin
 					reg_busy <= 1'b0;
+					reg_skip <= 1'b1;
 				end
 			end
 			
 			// wait frame start
-			if ( reg_wait_fs ) begin
+			if ( reg_busy && reg_skip ) begin
 				if ( s_axi4s_tvalid && s_axi4s_tuser ) begin 
 					// frame start
-					reg_wait_fs   <= 1'b0;
+					reg_skip      <= 1'b0;
 
 					// aw start
 					reg_awbusy    <= 1'b1;
-					reg_awvalid   <= 1'b1;
-					reg_awaddr    <= reg_param_addr;
 					reg_addr_base <= reg_param_addr + reg_param_stride;
-					reg_awhcnt    <= reg_param_width  - (reg_param_awlen+1'b1);
-					reg_awvcnt    <= reg_param_height - 1'b1;
+					reg_awaddr    <= reg_param_addr;
+					reg_awvalid   <= 1'b1;
+					
+					reg_awhcnt    <= init_awhcnt;
+					reg_awhlast   <= init_awhlast;
+					reg_awvcnt    <= init_awvcnt;
 					
 					// w start
-					reg_wlen   <= reg_param_awlen;
-					reg_wlast  <= (reg_param_awlen == 0);
-					reg_wdata  <= s_axi4s_tdata;
-					reg_wvalid <= s_axi4s_tvalid;
+					reg_wbusy     <= 1'b1;
+					reg_wlen      <= reg_param_awlen;
+					reg_wlast     <= (reg_param_awlen == 0);
+					reg_pre_wlast <= (reg_param_awlen == 0) || (reg_param_awlen == 1);
+					reg_wdata     <= s_axi4s_tdata;
+					reg_wvalid    <= s_axi4s_tvalid;
+
+					reg_whcnt     <= init_whcnt;
+					reg_whlast    <= init_whlast;
+					reg_wvcnt     <= init_wvcnt;
+					reg_wvlast    <= init_wvlast;
 				end
 			end
 			
 			// awチャネル制御
 			if ( reg_awbusy ) begin
 				if ( m_axi4_awready ) begin
-					reg_awaddr <= reg_awaddr + ((reg_param_awlen+1'b1) << 2);
-					reg_awhcnt <= next_awhcnt;
-
-					if ( reg_awhcnt == 0 ) begin
+					reg_awaddr  <= reg_awaddr + ((reg_param_awlen+1'b1) << 2);
+					reg_awhcnt  <= next_awhcnt;
+					reg_awhlast <= next_awhlast;
+					
+					if ( reg_awhlast ) begin
 						// line end
-						reg_awhcnt    <= reg_param_width - (reg_param_awlen+1'b1);
+						reg_awhcnt    <= init_awhcnt;
+						reg_awhlast   <= init_awhlast;
 						reg_awvcnt    <= next_awvcnt;
 						reg_awaddr    <= reg_addr_base;
 						reg_addr_base <= reg_addr_base + reg_param_stride;
@@ -219,25 +260,30 @@ module vdma_axi4s_to_axi4_core
 			end
 			if ( reg_wbusy ) begin
 				if ( !m_axi4_wvalid || m_axi4_wready ) begin
+					reg_wlast  <= reg_pre_wlast;
 					reg_wdata  <= s_axi4s_tdata;
 					reg_wvalid <= s_axi4s_tvalid;
 					
 					if ( s_axi4s_tvalid ) begin
-						reg_wlen  <=  reg_wlen - 1'b1;
-						reg_wlast <= ((reg_wlen - 1'b1) == 0);
+						reg_wlen <= reg_wlen - 1'b1;
 						if ( reg_wlen == 0 ) begin
-							reg_wlen  <=  reg_param_awlen;
-							reg_wlast <= (reg_param_awlen == 0);
+							reg_wlen      <= reg_param_awlen;
 						end
-				
-						reg_whcnt <= next_whcnt;
-						if ( reg_whcnt == 0 ) begin
-							reg_wvcnt <= next_wvcnt;
-							reg_whcnt <= reg_param_width - 1'b1;
-							if ( reg_wvcnt == 0 ) begin
-								reg_wbusy  <= 1'b0;
-								reg_whcnt  <= {H_WIDTH{1'bx}};
-								reg_wvcnt  <= {V_WIDTH{1'bx}};
+						
+						reg_pre_wlast <= ((reg_wlen - 1'b1) == 1) || (reg_param_awlen == 0);
+						if ( reg_pre_wlast ) begin
+							reg_whcnt  <= next_whcnt;
+							reg_whlast <= next_whlast;
+							if ( reg_whlast ) begin
+								reg_whcnt  <= init_whcnt;
+								reg_whlast <= init_whlast;
+								reg_wvcnt  <= next_wvcnt;
+								reg_wvlast <= next_wvlast;
+								if ( reg_wvlast ) begin
+									reg_wbusy  <= 1'b0;
+									reg_whcnt  <= {H_WIDTH{1'bx}};
+									reg_wvcnt  <= {V_WIDTH{1'bx}};
+								end
 							end
 						end
 					end
@@ -266,14 +312,14 @@ module vdma_axi4s_to_axi4_core
 	assign m_axi4_awregion = 4'd0;
 	assign m_axi4_awsize   = AXI4_DATA_SIZE;
 	assign m_axi4_awvalid  = reg_awvalid;
-
+	
 	assign m_axi4_wstrb    = {AXI4_STRB_WIDTH{1'b1}};
 	assign m_axi4_wdata    = reg_wdata;
 	assign m_axi4_wlast    = reg_wlast;
 	assign m_axi4_wvalid   = reg_wvalid;
 	assign m_axi4_bready   = 1'b1;
 	
-	assign s_axi4s_tready  = (!reg_busy || (reg_wbusy && (!m_axi4_wvalid && m_axi4_wready)));
+	assign s_axi4s_tready  = (reg_skip || (reg_wbusy && (!m_axi4_wvalid || m_axi4_wready)));
 	
 endmodule
 
