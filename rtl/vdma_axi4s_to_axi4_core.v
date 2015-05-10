@@ -103,8 +103,9 @@ module vdma_axi4s_to_axi4_core
 	reg		[AXI4_ADDR_WIDTH-1:0]	reg_addr_base;
 	reg		[AXI4_ADDR_WIDTH-1:0]	reg_awaddr;
 	reg		[H_WIDTH-1:0]			reg_awhcnt;
-	reg		[V_WIDTH-1:0]			reg_awvcnt;
 	reg								reg_awhlast;
+	reg		[V_WIDTH-1:0]			reg_awvcnt;
+	reg								reg_awvlast;
 	
 	wire	[H_WIDTH:0]				decrement_awhcnt = (reg_awhcnt - reg_param_awlen - 1'b1);
 	wire	[H_WIDTH-1:0]			init_awhcnt  = (reg_param_width - 1'b1) - reg_param_awlen;
@@ -121,7 +122,6 @@ module vdma_axi4s_to_axi4_core
 	// wÉ`ÉÉÉlÉãêßå‰ïœêî
 	reg								reg_wbusy;
 	reg								reg_wlast;
-	reg								reg_pre_wlast;
 	reg		[AXI4S_DATA_WIDTH-1:0]	reg_wdata;
 	reg								reg_wvalid;
 	
@@ -144,7 +144,6 @@ module vdma_axi4s_to_axi4_core
 	wire	[V_WIDTH-1:0]			next_wvcnt  = (reg_wvcnt - 1'b1);
 	wire							next_wvlast = ((reg_wvcnt - 1'b1) == 0);
 	
-	
 	always @(posedge aclk) begin
 		if ( !aresetn ) begin
 			reg_busy         <= 1'b0;
@@ -162,8 +161,9 @@ module vdma_axi4s_to_axi4_core
 			reg_addr_base    <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_awaddr       <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_awhcnt       <= {H_WIDTH{1'bx}};
-			reg_awhlast      <= 1'b0;
+			reg_awhlast      <= 1'bx;
 			reg_awvcnt       <= {V_WIDTH{1'bx}};
+			reg_awvlast      <= 1'bx;
 			
 			reg_wbusy        <= 1'b0;
 			reg_wlast        <= 1'bx;
@@ -211,12 +211,12 @@ module vdma_axi4s_to_axi4_core
 					reg_awhcnt    <= init_awhcnt;
 					reg_awhlast   <= init_awhlast;
 					reg_awvcnt    <= init_awvcnt;
+					reg_awvlast   <= init_awvlast;
 					
 					// w start
 					reg_wbusy     <= 1'b1;
 					reg_wlen      <= reg_param_awlen;
 					reg_wlast     <= (reg_param_awlen == 0);
-					reg_pre_wlast <= (reg_param_awlen == 0) || (reg_param_awlen == 1);
 					reg_wdata     <= s_axi4s_tdata;
 					reg_wvalid    <= s_axi4s_tvalid;
 
@@ -239,17 +239,14 @@ module vdma_axi4s_to_axi4_core
 						reg_awhcnt    <= init_awhcnt;
 						reg_awhlast   <= init_awhlast;
 						reg_awvcnt    <= next_awvcnt;
+						reg_awvlast   <= next_awvlast;
 						reg_awaddr    <= reg_addr_base;
 						reg_addr_base <= reg_addr_base + reg_param_stride;
 						
-						if ( reg_awvcnt == 0 ) begin
+						if ( reg_awvlast ) begin
 							// frame end
 							reg_awbusy    <= 1'b0;
 							reg_awvalid   <= 1'b0;
-							reg_addr_base <= {AXI4_ADDR_WIDTH{1'bx}};
-							reg_awaddr    <= {AXI4_ADDR_WIDTH{1'bx}};
-							reg_awhcnt    <= {H_WIDTH{1'bx}};
-							reg_awvcnt    <= {V_WIDTH{1'bx}};
 						end
 					end
 				end
@@ -267,10 +264,8 @@ module vdma_axi4s_to_axi4_core
 					
 					if ( s_axi4s_tvalid ) begin
 						reg_wlen      <= reg_wlen - 1'b1;
-				//		reg_pre_wlast <= ((reg_wlen - 1'b1) == 1) || (reg_param_awlen == 0);
 						if ( reg_wlen == 0 ) begin
 							reg_wlen      <= reg_param_awlen;
-							reg_pre_wlast <= (reg_param_awlen == 1) || (reg_param_awlen == 0);
 						end
 						
 						if ( reg_wlast ) begin
@@ -281,11 +276,6 @@ module vdma_axi4s_to_axi4_core
 								reg_whlast <= init_whlast;
 								reg_wvcnt  <= next_wvcnt;
 								reg_wvlast <= next_wvlast;
-						//		if ( reg_wvlast ) begin
-						//			reg_wbusy  <= 1'b0;
-						//			reg_whcnt  <= {H_WIDTH{1'bx}};
-						//			reg_wvcnt  <= {V_WIDTH{1'bx}};
-						//		end
 							end
 						end
 				
