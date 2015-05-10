@@ -11,6 +11,8 @@ module vdma_axi4_to_axi4s
 			
 			parameter	AXI4_ID_WIDTH    = 6,
 			parameter	AXI4_ADDR_WIDTH  = 32,
+			parameter	AXI4_DATA_SIZE   = 2,	// 0:8bit, 1:16bit, 2:32bit ...
+			parameter	AXI4_DATA_WIDTH  = (8 << AXI4_DATA_SIZE),
 			parameter	AXI4_LEN_WIDTH   = 8,
 			parameter	AXI4_QOS_WIDTH   = 4,
 			parameter	AXI4S_USER_WIDTH = 1,
@@ -51,7 +53,7 @@ module vdma_axi4_to_axi4s
 			input	wire							m_axi4_arready,
 			input	wire	[AXI4_ID_WIDTH-1:0]		m_axi4_rid,
 			input	wire	[1:0]					m_axi4_rresp,
-			input	wire	[31:0]					m_axi4_rdata,
+			input	wire	[AXI4_DATA_WIDTH-1:0]	m_axi4_rdata,
 			input	wire							m_axi4_rlast,
 			input	wire							m_axi4_rvalid,
 			output	wire							m_axi4_rready,
@@ -132,12 +134,12 @@ module vdma_axi4_to_axi4s
 		end
 		else if ( s_wb_stb_i && s_wb_we_i ) begin
 			case ( s_wb_adr_i )
-			REGOFFSET_CTL_CONTROL:	reg_ctl_control  <= s_wb_dat_i;
-			REGOFFSET_PARAM_ADDR:	reg_param_addr   <= s_wb_dat_i;
-			REGOFFSET_PARAM_STRIDE:	reg_param_stride <= s_wb_dat_i;
-			REGOFFSET_PARAM_WIDTH:	reg_param_width  <= s_wb_dat_i;
-			REGOFFSET_PARAM_HEIGHT:	reg_param_height <= s_wb_dat_i;
-			REGOFFSET_PARAM_ARLEN:	reg_param_arlen  <= s_wb_dat_i;
+			REGOFFSET_CTL_CONTROL:	reg_ctl_control  <= s_wb_dat_i[1:0];
+			REGOFFSET_PARAM_ADDR:	reg_param_addr   <= s_wb_dat_i[AXI4_ADDR_WIDTH-1:0];
+			REGOFFSET_PARAM_STRIDE:	reg_param_stride <= s_wb_dat_i[STRIDE_WIDTH-1:0];
+			REGOFFSET_PARAM_WIDTH:	reg_param_width  <= s_wb_dat_i[H_WIDTH-1:0];
+			REGOFFSET_PARAM_HEIGHT:	reg_param_height <= s_wb_dat_i[V_WIDTH-1:0];
+			REGOFFSET_PARAM_ARLEN:	reg_param_arlen  <= s_wb_dat_i[AXI4_LEN_WIDTH-1:0];
 			endcase
 		end
 		
@@ -177,6 +179,8 @@ module vdma_axi4_to_axi4s
 			#(
 				.AXI4_ID_WIDTH		(AXI4_ID_WIDTH),
 				.AXI4_ADDR_WIDTH	(AXI4_ADDR_WIDTH),
+				.AXI4_DATA_SIZE 	(AXI4_DATA_SIZE),
+				.AXI4_DATA_WIDTH	(AXI4_DATA_WIDTH),
 				.AXI4_LEN_WIDTH		(AXI4_LEN_WIDTH),
 				.AXI4_QOS_WIDTH		(AXI4_QOS_WIDTH),
 				.AXI4S_USER_WIDTH	(AXI4S_USER_WIDTH),

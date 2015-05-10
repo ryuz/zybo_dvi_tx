@@ -113,10 +113,10 @@ module vdma_axi4s_to_axi4_core
 	wire	[H_WIDTH-1:0]			next_awhcnt  = decrement_awhcnt[H_WIDTH-1:0];
 	wire							next_awhlast = decrement_awhcnt[H_WIDTH] || (decrement_awhcnt == 0);	// borrow or zero
 	
-	wire	[V_WIDTH-1:0]			init_awvcnt  = reg_param_height - 1'b1;
-	wire							init_awvlast = (reg_param_height - 1'b1) == 0;
-	wire	[V_WIDTH-1:0]			next_awvcnt  = reg_awvcnt - 1'b1;
-	wire							next_awvlast = (reg_awvcnt - 1'b1) == 0;
+	wire	[V_WIDTH-1:0]			init_awvcnt  = (reg_param_height - 1'b1);
+	wire							init_awvlast = (init_awvcnt == 0);
+	wire	[V_WIDTH-1:0]			next_awvcnt  = (reg_awvcnt - 1'b1);
+	wire							next_awvlast = (next_awvcnt == 0);
 	
 	
 	// wÉ`ÉÉÉlÉãêßå‰ïœêî
@@ -140,9 +140,9 @@ module vdma_axi4s_to_axi4_core
 	wire							next_whlast = decrement_whcnt[H_WIDTH] || (decrement_whcnt == 0);	// borrow or zero
 	
 	wire	[V_WIDTH-1:0]			init_wvcnt  = (reg_param_height - 1'b1);
-	wire							init_wvlast = ((reg_param_height - 1'b1) == 0);
+	wire							init_wvlast = (init_wvcnt == 0);
 	wire	[V_WIDTH-1:0]			next_wvcnt  = (reg_wvcnt - 1'b1);
-	wire							next_wvlast = ((reg_wvcnt - 1'b1) == 0);
+	wire							next_wvlast = (next_wvcnt == 0);
 	
 	always @(posedge aclk) begin
 		if ( !aresetn ) begin

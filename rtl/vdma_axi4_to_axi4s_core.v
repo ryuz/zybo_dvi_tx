@@ -16,10 +16,12 @@ module vdma_axi4_to_axi4s_core
 		#(
 			parameter	AXI4_ID_WIDTH    = 6,
 			parameter	AXI4_ADDR_WIDTH  = 32,
+			parameter	AXI4_DATA_SIZE   = 2,	// 0:8bit, 1:16bit, 2:32bit ...
+			parameter	AXI4_DATA_WIDTH  = (8 << AXI4_DATA_SIZE),
 			parameter	AXI4_LEN_WIDTH   = 8,
-			parameter	AXI4_QOS_WIDTH   = 4,
+			parameter	AXI4_QOS_WIDTH   = 4,			
 			parameter	AXI4S_USER_WIDTH = 1,
-			parameter	AXI4S_DATA_WIDTH = 24,
+			parameter	AXI4S_DATA_WIDTH = AXI4_DATA_WIDTH,
 			parameter	STRIDE_WIDTH     = 14,
 			parameter	INDEX_WIDTH      = 8,
 			parameter	H_WIDTH          = 12,
@@ -64,7 +66,7 @@ module vdma_axi4_to_axi4s_core
 			input	wire							m_axi4_arready,
 			input	wire	[AXI4_ID_WIDTH-1:0]		m_axi4_rid,
 			input	wire	[1:0]					m_axi4_rresp,
-			input	wire	[31:0]					m_axi4_rdata,
+			input	wire	[AXI4_DATA_WIDTH-1:0]	m_axi4_rdata,
 			input	wire							m_axi4_rlast,
 			input	wire							m_axi4_rvalid,
 			output	wire							m_axi4_rready,
@@ -90,15 +92,30 @@ module vdma_axi4_to_axi4s_core
 	
 	// arチャネル制御変数
 	reg								reg_arbusy;
-	reg								reg_arvalid;
 	reg		[AXI4_ADDR_WIDTH-1:0]	reg_addr_base;
 	reg		[AXI4_ADDR_WIDTH-1:0]	reg_araddr;
+	reg		[AXI4_LEN_WIDTH-1:0]	reg_arlen; 
+	reg								reg_arvalid;
 	reg		[H_WIDTH-1:0]			reg_arhcnt;
+	reg								reg_arhlast;
 	reg		[V_WIDTH-1:0]			reg_arvcnt;
-	wire	[H_WIDTH-1:0]			next_arhcnt = (reg_arhcnt - reg_param_arlen - 1);
-	wire	[V_WIDTH-1:0]			next_arvcnt = (reg_arvcnt - 1);
-	reg								reg_arhcnt_z;
-	reg								reg_arvcnt_z;
+	reg								reg_arvlast;
+
+	wire	[H_WIDTH:0]				decrement_arhcnt = (reg_arhcnt - reg_param_arlen - 1'b1);
+	
+	wire	[AXI4_LEN_WIDTH-1:0]	init_arlen   = reg_param_arlen;		// reg_param_arlen < reg_param_width-1 ? reg_param_arlen : reg_param_width-1;
+	wire	[AXI4_LEN_WIDTH-1:0]	next_arlen   = decrement_arhcnt[H_WIDTH] ? (reg_arhcnt - 1'b1) : reg_param_arlen;
+	
+	wire	[H_WIDTH-1:0]			init_arhcnt  = (reg_param_width - 1'b1) - reg_param_arlen;
+	wire							init_arhlast = 1'b0; // (reg_param_width - 1'b1) <= reg_param_arlen;
+	wire	[H_WIDTH-1:0]			next_arhcnt  = decrement_arhcnt[H_WIDTH-1:0];
+	wire							next_arhlast = decrement_arhcnt[H_WIDTH] || (decrement_arhcnt == 0);	// borrow or zero
+	
+	wire	[V_WIDTH-1:0]			init_arvcnt  = (reg_param_height - 1'b1);
+	wire							init_arvlast = (init_arvcnt == 0);
+	wire	[V_WIDTH-1:0]			next_arvcnt  = (reg_arvcnt - 1'b1);
+	wire							next_arvlast = (next_arvcnt == 0);
+
 	
 	// rチャネル制御変数
 	reg								reg_rbusy;
@@ -106,11 +123,20 @@ module vdma_axi4_to_axi4s_core
 	reg								reg_rfe;	// frame end
 	reg								reg_rle;	// line end
 	reg		[H_WIDTH-1:0]			reg_rhcnt;
+	reg								reg_rhlast;
 	reg		[V_WIDTH-1:0]			reg_rvcnt;
-	wire	[H_WIDTH-1:0]			next_rhcnt = (reg_rhcnt - 1);
-	wire	[V_WIDTH-1:0]			next_rvcnt = (reg_rvcnt - 1);
-	
-	
+	reg								reg_rvlast;
+
+	wire	[H_WIDTH-1:0]			init_rhcnt  = (reg_param_width  - 1'b1);
+	wire							init_rhlast = (init_rhcnt == 0);
+	wire	[H_WIDTH-1:0]			next_rhcnt  = (reg_rhcnt - 1'b1);
+	wire							next_rhlast = (next_rhcnt == 0);
+
+	wire	[V_WIDTH-1:0]			init_rvcnt  = (reg_param_height - 1'b1);
+	wire							init_rvlast = (init_rvcnt == 0);
+	wire	[V_WIDTH-1:0]			next_rvcnt  = (reg_rvcnt - 1'b1);
+	wire							next_rvlast = (next_rvcnt == 0);
+		
 	always @(posedge aclk) begin
 		if ( !aresetn ) begin
 			reg_busy         <= 1'b0;
@@ -123,19 +149,24 @@ module vdma_axi4_to_axi4s_core
 			reg_param_arlen  <= {AXI4_LEN_WIDTH{1'bx}};
 			
 			reg_arbusy       <= 1'b0;
-			reg_arvalid      <= 1'b0;
 			reg_addr_base    <= {AXI4_ADDR_WIDTH{1'bx}};
 			reg_araddr       <= {AXI4_ADDR_WIDTH{1'bx}};
+			reg_arlen        <= {AXI4_LEN_WIDTH{1'bx}};
+			reg_arvalid      <= 1'b0;
 			reg_arhcnt       <= {H_WIDTH{1'bx}};
-			reg_arhcnt_z     <= 1'bx;
+			reg_arhlast      <= 1'bx;
 			reg_arvcnt       <= {V_WIDTH{1'bx}};
+			reg_arvlast      <= 1'bx;
+			
 			
 			reg_rbusy        <= 1'b0;
 			reg_rfs          <= 1'bx;
 			reg_rfe          <= 1'bx;
 			reg_rle          <= 1'bx;
 			reg_rhcnt        <= {H_WIDTH{1'bx}};
+			reg_rhlast       <= 1'bx;
 			reg_rvcnt        <= {V_WIDTH{1'bx}};
+			reg_rvlast       <= 1'bx;
 		end
 		else begin
 			// enable
@@ -164,43 +195,46 @@ module vdma_axi4_to_axi4s_core
 			if ( reg_arbusy ) begin
 				if ( !reg_arvalid ) begin
 					// frame start
-					reg_arvalid   <= 1'b1;
-					reg_araddr    <= reg_param_addr;
 					reg_addr_base <= reg_param_addr + reg_param_stride;
-					reg_arhcnt    <=   reg_param_width  - (reg_param_arlen+1'b1);
-					reg_arhcnt_z  <= ((reg_param_width  - (reg_param_arlen+1'b1)) == 0);
-					reg_arvcnt    <= reg_param_height - 1'b1;
+					reg_araddr    <= reg_param_addr;
+					reg_arlen     <= init_arlen;
+					reg_arvalid   <= 1'b1;
+					
+					reg_arhcnt    <= init_arhcnt;
+					reg_arhlast   <= init_arhlast;
+					reg_arvcnt    <= init_arvcnt;
+					reg_arvlast   <= init_arvlast;
 					
 					reg_rbusy     <= 1'b1;
 					reg_rfs       <= 1'b1;
 					reg_rfe       <= 1'b0;
 					reg_rle       <= 1'b0;
-					reg_rhcnt     <= reg_param_width  - 1'b1;
-					reg_rvcnt     <= reg_param_height - 1'b1;
+					reg_rhcnt     <= init_rhcnt;
+					reg_rhlast    <= init_rhlast;
+					reg_rvcnt     <= init_rvcnt;
+					reg_rvlast    <= init_rvlast;
 				end
 				else begin
 					if ( m_axi4_arready ) begin
-						reg_araddr   <= reg_araddr + ((reg_param_arlen+1'b1) << 2);
-						reg_arhcnt   <=  next_arhcnt;
-						reg_arhcnt_z <= (next_arhcnt == 0);
+						reg_araddr  <= reg_araddr + ((reg_param_arlen+1'b1) << 2);
+						reg_arlen   <= next_arlen;
+						reg_arhcnt  <= next_arhcnt;
+						reg_arhlast <= next_arhlast;
 						
-						if ( reg_arhcnt_z ) begin
+						if ( reg_arhlast ) begin
 							// line end
-							reg_arhcnt    <=  reg_param_width - (reg_param_arlen+1'b1);
-							reg_arhcnt_z  <= ((reg_param_width - (reg_param_arlen+1'b1)) == 0);
+							reg_arlen     <= init_arlen;
+							reg_arhcnt    <= init_arhcnt;
+							reg_arhlast   <= init_arhlast;
 							reg_arvcnt    <= next_arvcnt;
+							reg_arvlast   <= next_arvlast;
 							reg_araddr    <= reg_addr_base;
 							reg_addr_base <= reg_addr_base + reg_param_stride;
 							
-							if ( reg_arvcnt == 0 ) begin
+							if ( reg_arvlast ) begin
 								// frame end
 								reg_arbusy    <= 1'b0;
 								reg_arvalid   <= 1'b0;
-								reg_addr_base <= {AXI4_ADDR_WIDTH{1'bx}};
-								reg_araddr    <= {AXI4_ADDR_WIDTH{1'bx}};
-								reg_arhcnt    <= {H_WIDTH{1'bx}};
-								reg_arhcnt_z  <= 1'bx;
-								reg_arvcnt    <= {V_WIDTH{1'bx}};
 							end
 						end
 					end
@@ -213,17 +247,15 @@ module vdma_axi4_to_axi4s_core
 				reg_rfe <= (next_rhcnt == 0) && (reg_rvcnt == 0);
 				reg_rle <= (next_rhcnt == 0);
 				
-				reg_rhcnt <= next_rhcnt;
-				if ( reg_rhcnt == 0 ) begin
-					reg_rvcnt <= next_rvcnt;
-					reg_rhcnt <= reg_param_width  - 1'b1;
-					if ( reg_rvcnt == 0 ) begin
+				reg_rhcnt  <= next_rhcnt;
+				reg_rhlast <= next_rhlast;
+				if ( reg_rhlast ) begin
+					reg_rhcnt  <= init_rhcnt;
+					reg_rhlast <= init_rhlast;
+					reg_rvcnt  <= next_rvcnt;
+					reg_rvlast <= next_rvlast;
+					if ( reg_rvlast ) begin
 						reg_rbusy <= 1'b0;
-						reg_rfs   <= 1'bx;
-						reg_rfe   <= 1'bx;
-						reg_rle   <= 1'bx;
-						reg_rhcnt <= {H_WIDTH{1'bx}};
-						reg_rvcnt <= {V_WIDTH{1'bx}};
 					end
 				end
 			end			
@@ -243,12 +275,12 @@ module vdma_axi4_to_axi4s_core
 	assign m_axi4_araddr   = reg_araddr;
 	assign m_axi4_arburst  = 2'b01;					// INCR
 	assign m_axi4_arcache  = 4'b0001;				// Bufferable
-	assign m_axi4_arlen    = reg_param_arlen;
+	assign m_axi4_arlen    = reg_arlen;	// reg_param_arlen;
 	assign m_axi4_arlock   = 1'b0;					// Normal access
 	assign m_axi4_arprot   = 3'b000;
 	assign m_axi4_arqos    = {AXI4_QOS_WIDTH{1'b0}};
 	assign m_axi4_arregion = 4'd0;
-	assign m_axi4_arsize   = 3'b010;				// 4byte(32bit)
+	assign m_axi4_arsize   = AXI4_DATA_SIZE;
 	assign m_axi4_arvalid  = reg_arvalid;
 	assign m_axi4_rready   = m_axi4s_tready;
 	
