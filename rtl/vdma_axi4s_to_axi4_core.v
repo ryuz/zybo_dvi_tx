@@ -124,19 +124,20 @@ module vdma_axi4s_to_axi4_core
 	reg								reg_pre_wlast;
 	reg		[AXI4S_DATA_WIDTH-1:0]	reg_wdata;
 	reg								reg_wvalid;
+	
 	reg		[AXI4_LEN_WIDTH-1:0]	reg_wlen;
 	reg		[H_WIDTH-1:0]			reg_whcnt;
 	reg								reg_whlast;
 	reg		[V_WIDTH-1:0]			reg_wvcnt;
 	reg								reg_wvlast;
+
+	wire							next_wlast  = ((reg_wlen - 1'b1) == 0) || (reg_param_awlen == 0);
 	
 	wire	[H_WIDTH:0]				decrement_whcnt = (reg_whcnt - reg_param_awlen - 1'b1);
 	wire	[H_WIDTH-1:0]			init_whcnt  = (reg_param_width - 1'b1) - reg_param_awlen;
 	wire							init_whlast = 1'b0; // (reg_param_width - 1'b1) <= reg_param_awlen;
 	wire	[H_WIDTH-1:0]			next_whcnt  = decrement_whcnt[H_WIDTH-1:0];
 	wire							next_whlast = decrement_whcnt[H_WIDTH] || (decrement_whcnt == 0);	// borrow or zero
-	
-//	wire	[H_WIDTH-1:0]			next_whcnt  = (reg_whcnt - 1'b1);
 	
 	wire	[V_WIDTH-1:0]			init_wvcnt  = (reg_param_height - 1'b1);
 	wire							init_wvlast = ((reg_param_height - 1'b1) == 0);
@@ -260,18 +261,19 @@ module vdma_axi4s_to_axi4_core
 			end
 			if ( reg_wbusy ) begin
 				if ( !m_axi4_wvalid || m_axi4_wready ) begin
-					reg_wlast  <= reg_pre_wlast;
+					reg_wlast  <= next_wlast;
 					reg_wdata  <= s_axi4s_tdata;
 					reg_wvalid <= s_axi4s_tvalid;
 					
 					if ( s_axi4s_tvalid ) begin
-						reg_wlen <= reg_wlen - 1'b1;
+						reg_wlen      <= reg_wlen - 1'b1;
+				//		reg_pre_wlast <= ((reg_wlen - 1'b1) == 1) || (reg_param_awlen == 0);
 						if ( reg_wlen == 0 ) begin
 							reg_wlen      <= reg_param_awlen;
+							reg_pre_wlast <= (reg_param_awlen == 1) || (reg_param_awlen == 0);
 						end
 						
-						reg_pre_wlast <= ((reg_wlen - 1'b1) == 1) || (reg_param_awlen == 0);
-						if ( reg_pre_wlast ) begin
+						if ( reg_wlast ) begin
 							reg_whcnt  <= next_whcnt;
 							reg_whlast <= next_whlast;
 							if ( reg_whlast ) begin
@@ -279,12 +281,16 @@ module vdma_axi4s_to_axi4_core
 								reg_whlast <= init_whlast;
 								reg_wvcnt  <= next_wvcnt;
 								reg_wvlast <= next_wvlast;
-								if ( reg_wvlast ) begin
-									reg_wbusy  <= 1'b0;
-									reg_whcnt  <= {H_WIDTH{1'bx}};
-									reg_wvcnt  <= {V_WIDTH{1'bx}};
-								end
+						//		if ( reg_wvlast ) begin
+						//			reg_wbusy  <= 1'b0;
+						//			reg_whcnt  <= {H_WIDTH{1'bx}};
+						//			reg_wvcnt  <= {V_WIDTH{1'bx}};
+						//		end
 							end
+						end
+				
+						if ( reg_wvlast && next_whlast && next_wlast ) begin
+							reg_wbusy  <= 1'b0;
 						end
 					end
 				end
