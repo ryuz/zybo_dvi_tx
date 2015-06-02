@@ -16,11 +16,11 @@ module vdma_axi4s_to_axi4_core
 		#(
 			parameter	AXI4_ID_WIDTH    = 6,
 			parameter	AXI4_ADDR_WIDTH  = 32,
-			parameter	AXI4_LEN_WIDTH   = 8,
-			parameter	AXI4_QOS_WIDTH   = 4,
 			parameter	AXI4_DATA_SIZE   = 2,	// 0:8bit, 1:16bit, 2:32bit ...
 			parameter	AXI4_DATA_WIDTH  = (8 << AXI4_DATA_SIZE),
 			parameter	AXI4_STRB_WIDTH  = (1 << AXI4_DATA_SIZE),
+			parameter	AXI4_LEN_WIDTH   = 8,
+			parameter	AXI4_QOS_WIDTH   = 4,
 			parameter	AXI4S_USER_WIDTH = 1,
 			parameter	AXI4S_DATA_WIDTH = AXI4_DATA_WIDTH,
 			parameter	STRIDE_WIDTH     = 14,
