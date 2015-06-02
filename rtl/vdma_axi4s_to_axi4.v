@@ -64,6 +64,13 @@ module vdma_axi4s_to_axi4
 			input	wire							m_axi4_bvalid,
 			output	wire							m_axi4_bready,
 			
+			// slave AXI4-Stream (output)
+			input	wire	[AXI4S_USER_WIDTH-1:0]	s_axi4s_tuser,
+			input	wire							s_axi4s_tlast,
+			input	wire	[AXI4S_DATA_WIDTH-1:0]	s_axi4s_tdata,
+			input	wire							s_axi4s_tvalid,
+			output	wire							s_axi4s_tready,
+			
 			// WISHBONE (register access)
 			input	wire							s_wb_rst_i,
 			input	wire							s_wb_clk_i,
