@@ -70,7 +70,7 @@ module vdma_axi4s_to_axi4_core
 			output	wire	[AXI4_DATA_WIDTH-1:0]	m_axi4_wdata,
 			output	wire							m_axi4_wlast,
 			output	wire							m_axi4_wvalid,
-			output	wire							m_axi4_wready,
+			input	wire							m_axi4_wready,
 			
 			input	wire	[AXI4_ID_WIDTH-1:0]		m_axi4_bid,
 			input	wire	[1:0]					m_axi4_bresp,
@@ -258,11 +258,12 @@ module vdma_axi4s_to_axi4_core
 			end
 			if ( reg_wbusy ) begin
 				if ( !m_axi4_wvalid || m_axi4_wready ) begin
-					reg_wlast  <= next_wlast;
-					reg_wdata  <= s_axi4s_tdata;
 					reg_wvalid <= s_axi4s_tvalid;
 					
 					if ( s_axi4s_tvalid ) begin
+						reg_wlast  <= next_wlast;
+						reg_wdata  <= s_axi4s_tdata;
+
 						reg_wlen      <= reg_wlen - 1'b1;
 						if ( reg_wlen == 0 ) begin
 							reg_wlen      <= reg_param_awlen;

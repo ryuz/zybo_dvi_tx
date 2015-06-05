@@ -57,7 +57,7 @@ module vdma_axi4s_to_axi4
 			output	wire	[AXI4_DATA_WIDTH-1:0]	m_axi4_wdata,
 			output	wire							m_axi4_wlast,
 			output	wire							m_axi4_wvalid,
-			output	wire							m_axi4_wready,
+			input	wire							m_axi4_wready,
 			
 			input	wire	[AXI4_ID_WIDTH-1:0]		m_axi4_bid,
 			input	wire	[1:0]					m_axi4_bresp,
