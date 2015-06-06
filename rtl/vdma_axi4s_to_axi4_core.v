@@ -130,7 +130,8 @@ module vdma_axi4s_to_axi4_core
 	reg								reg_whlast;
 	reg		[V_WIDTH-1:0]			reg_wvcnt;
 	reg								reg_wvlast;
-
+	
+	wire							init_wlast  = (reg_param_awlen == 0);
 	wire							next_wlast  = ((reg_wlen - 1'b1) == 0) || (reg_param_awlen == 0);
 	
 	wire	[H_WIDTH:0]				decrement_whcnt = (reg_whcnt - reg_param_awlen - 1'b1);
@@ -143,6 +144,8 @@ module vdma_axi4s_to_axi4_core
 	wire							init_wvlast = (init_wvcnt == 0);
 	wire	[V_WIDTH-1:0]			next_wvcnt  = (reg_wvcnt - 1'b1);
 	wire							next_wvlast = (next_wvcnt == 0);
+
+	wire							next_wflast = (next_wlast && reg_wvlast && (reg_param_awlen == 0 ? next_whlast : reg_whlast));
 	
 	always @(posedge aclk) begin
 		if ( !aresetn ) begin
@@ -279,8 +282,8 @@ module vdma_axi4s_to_axi4_core
 								reg_wvlast <= next_wvlast;
 							end
 						end
-				
-						if ( reg_wvlast && next_whlast && next_wlast ) begin
+						
+						if ( next_wflast ) begin
 							reg_wbusy  <= 1'b0;
 						end
 					end
