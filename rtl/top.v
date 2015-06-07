@@ -82,17 +82,17 @@ module top
 	wire	[3:0]	axi4_mem00_awqos;
 	wire	[3:0]	axi4_mem00_awregion;
 	wire	[2:0]	axi4_mem00_awsize;
-	wire			axi4_mem00_awvalid = 0;
+	wire			axi4_mem00_awvalid;
 	wire			axi4_mem00_awready;
 	wire	[3:0]	axi4_mem00_wstrb;
 	wire	[31:0]	axi4_mem00_wdata;
 	wire			axi4_mem00_wlast;
-	wire			axi4_mem00_wvalid = 0;
+	wire			axi4_mem00_wvalid;
 	wire			axi4_mem00_wready;
 	wire	[5:0]	axi4_mem00_bid;
 	wire	[1:0]	axi4_mem00_bresp;
 	wire			axi4_mem00_bvalid;
-	wire			axi4_mem00_bready = 1;
+	wire			axi4_mem00_bready;
 	wire	[5:0]	axi4_mem00_arid;
 	wire	[31:0]	axi4_mem00_araddr;
 	wire	[1:0]	axi4_mem00_arburst;
@@ -117,14 +117,14 @@ module top
 			(
 				.peri_aresetn					(peri_aresetn),
 				.peri_aclk						(peri_aclk),
-
+				
 				.mem_aresetn					(mem_aresetn),
 				.mem_aclk						(mem_aclk),
-
+				
 				.video_reset					(video_reset),
 				.video_clk						(video_clk),
 				.video_clk_x5					(video_clk_x5),
-
+				
 				.m_axi4l_peri00_awaddr			(axi4l_peri00_awaddr),
 				.m_axi4l_peri00_awprot			(axi4l_peri00_awprot),
 				.m_axi4l_peri00_awvalid			(axi4l_peri00_awvalid),
@@ -144,7 +144,7 @@ module top
 				.m_axi4l_peri00_rresp			(axi4l_peri00_rresp),
 				.m_axi4l_peri00_rvalid			(axi4l_peri00_rvalid),
 				.m_axi4l_peri00_rready			(axi4l_peri00_rready),
-
+				
 				.s_axi4_mem00_awid				(axi4_mem00_awid),
 				.s_axi4_mem00_awaddr			(axi4_mem00_awaddr),
 				.s_axi4_mem00_awburst			(axi4_mem00_awburst),
@@ -290,7 +290,7 @@ module top
 				.wb_dat_o			(wb_gpio_dat_o),
 				.wb_dat_i			(wb_host_dat_o),
 				.wb_we_i			(wb_host_we_o),
-				.wb_sel_i			(wb_host_stb_o),
+				.wb_sel_i			(wb_host_sel_o),
 				.wb_stb_i			(wb_gpio_stb_i),
 				.wb_ack_o			(wb_gpio_ack_o)
 			);
@@ -331,6 +331,107 @@ module top
 	
 	
 	// ----------------------------------------
+	//  DMA write
+	// ----------------------------------------
+
+	wire	[0:0]			axi4s_memw_tuser;
+	wire					axi4s_memw_tlast;
+	wire	[31:0]			axi4s_memw_tdata;
+	wire					axi4s_memw_tvalid;
+	wire					axi4s_memw_tready;
+	
+	ptngen_axi4s
+			#(
+				.AXI4S_DATA_WIDTH	(32),
+				.X_NUM				(640),
+				.Y_NUM				(480)
+			)
+		i_ptngen_axi4s
+			(
+				.aresetn			(mem_aresetn),
+				.aclk				(mem_aclk),
+				
+				.m_axi4s_tuser		(axi4s_memw_tuser),
+				.m_axi4s_tlast		(axi4s_memw_tlast),
+				.m_axi4s_tdata		(axi4s_memw_tdata),
+				.m_axi4s_tvalid		(axi4s_memw_tvalid),
+				.m_axi4s_tready		(axi4s_memw_tready)
+			);
+	
+	
+	wire	[31:0]			wb_vdmaw_dat_o;
+	wire					wb_vdmaw_stb_i;
+	wire					wb_vdmaw_ack_o;
+	
+	vdma_axi4s_to_axi4
+			#(
+				.AXI4_ID_WIDTH		(6),
+				.AXI4_ADDR_WIDTH	(32),
+				.AXI4_DATA_SIZE		(2),
+				.AXI4_LEN_WIDTH		(8),
+				.AXI4_QOS_WIDTH		(4),
+				.AXI4S_USER_WIDTH	(1),
+				.AXI4S_DATA_WIDTH	(24),
+				.INDEX_WIDTH		(8),
+				.STRIDE_WIDTH		(14),
+				.H_WIDTH			(12),
+				.V_WIDTH			(12),
+				.WB_ADR_WIDTH		(8),
+				.WB_DAT_WIDTH		(32),
+				.INIT_CTL_CONTROL	(2'b00),
+				.INIT_PARAM_ADDR	(32'h1800_0000),
+				.INIT_PARAM_STRIDE	(4096),
+				.INIT_PARAM_WIDTH	(640),
+				.INIT_PARAM_HEIGHT	(480),
+				.INIT_PARAM_AWLEN	(7)
+			)
+		i_vdma_axi4s_to_axi4
+			(
+				.aresetn			(mem_aresetn),
+				.aclk				(mem_aclk),
+
+				.m_axi4_awid		(axi4_mem00_awid),
+				.m_axi4_awaddr		(axi4_mem00_awaddr),
+				.m_axi4_awburst		(axi4_mem00_awburst),
+				.m_axi4_awcache		(axi4_mem00_awcache),
+				.m_axi4_awlen		(axi4_mem00_awlen),
+				.m_axi4_awlock		(axi4_mem00_awlock),
+				.m_axi4_awprot		(axi4_mem00_awprot),
+				.m_axi4_awqos		(axi4_mem00_awqos),
+				.m_axi4_awregion	(axi4_mem00_awregion),
+				.m_axi4_awsize		(axi4_mem00_awsize),
+				.m_axi4_awvalid		(axi4_mem00_awvalid),
+				.m_axi4_awready		(axi4_mem00_awready),
+				.m_axi4_wstrb		(axi4_mem00_wstrb),
+				.m_axi4_wdata		(axi4_mem00_wdata),
+				.m_axi4_wlast		(axi4_mem00_wlast),
+				.m_axi4_wvalid		(axi4_mem00_wvalid),
+				.m_axi4_wready		(axi4_mem00_wready),
+				.m_axi4_bid			(axi4_mem00_bid),
+				.m_axi4_bresp		(axi4_mem00_bresp),
+				.m_axi4_bvalid		(axi4_mem00_bvalid),
+				.m_axi4_bready		(axi4_mem00_bready),
+				
+				.s_axi4s_tuser		(axi4s_memw_tuser),
+				.s_axi4s_tlast		(axi4s_memw_tlast),
+				.s_axi4s_tdata		(axi4s_memw_tdata[23:0]),
+				.s_axi4s_tvalid		(axi4s_memw_tvalid),
+				.s_axi4s_tready		(axi4s_memw_tready),
+
+				.s_wb_rst_i			(wb_rst_o),
+				.s_wb_clk_i			(wb_clk_o),
+				.s_wb_adr_i			(wb_host_adr_o[2 +: 8]),
+				.s_wb_dat_o			(wb_vdmaw_dat_o),
+				.s_wb_dat_i			(wb_host_dat_o),
+				.s_wb_we_i			(wb_host_we_o),
+				.s_wb_sel_i			(wb_host_sel_o),
+				.s_wb_stb_i			(wb_vdmaw_stb_i),
+				.s_wb_ack_o			(wb_vdmaw_ack_o)
+			);
+	
+	
+	
+	// ----------------------------------------
 	//  DMA read
 	// ----------------------------------------
 	
@@ -340,9 +441,9 @@ module top
 	wire					axi4s_memr_tvalid;
 	wire					axi4s_memr_tready;
 
-	wire	[31:0]			wb_dmar_dat_o;
-	wire					wb_dmar_stb_i;
-	wire					wb_dmar_ack_o;
+	wire	[31:0]			wb_vdmar_dat_o;
+	wire					wb_vdmar_stb_i;
+	wire					wb_vdmar_ack_o;
 	
 	vdma_axi4_to_axi4s
 			#(
@@ -398,12 +499,12 @@ module top
 				.s_wb_rst_i			(wb_rst_o),
 				.s_wb_clk_i			(wb_clk_o),
 				.s_wb_adr_i			(wb_host_adr_o[2 +: 8]),
-				.s_wb_dat_o			(wb_dmar_dat_o),
+				.s_wb_dat_o			(wb_vdmar_dat_o),
 				.s_wb_dat_i			(wb_host_dat_o),
 				.s_wb_we_i			(wb_host_we_o),
-				.s_wb_sel_i			(wb_host_stb_o),
-				.s_wb_stb_i			(wb_dmar_stb_i),
-				.s_wb_ack_o			(wb_dmar_ack_o)
+				.s_wb_sel_i			(wb_host_sel_o),
+				.s_wb_stb_i			(wb_vdmar_stb_i),
+				.s_wb_ack_o			(wb_vdmar_ack_o)
 		);
 		
 	/*
@@ -501,6 +602,7 @@ module top
 	wire			vout_tgen_hsync;
 	wire			vout_tgen_de;
 	
+	/*
 	pattern_gen
 		i_pattern_gen
 			(
@@ -512,7 +614,52 @@ module top
 				.de					(vout_tgen_de),
 				.data				()
 			);
-
+	*/
+	
+	
+	wire	[31:0]			wb_vsgen_dat_o;
+	wire					wb_vsgen_stb_i;
+	wire					wb_vsgen_ack_o;
+	
+	vsync_generator
+			#(
+				.WB_ADR_WIDTH		(8),
+				.WB_DAT_WIDTH		(32),
+				.INIT_CTL_CONTROL	(1'b1),
+				.INIT_HTOTAL		(96 + 16 + 640 + 48),
+				.INIT_HDISP_START	(96 + 16),
+				.INIT_HDISP_END		(96 + 16 + 640 - 1),
+				.INIT_HSYNC_START	(0),
+				.INIT_HSYNC_END		(96 - 1),
+				.INIT_HSYNC_POL		(0),
+				.INIT_VTOTAL		(2 + 10 + 480 + 33),
+				.INIT_VDISP_START	(2 + 10),
+				.INIT_VDISP_END		(2 + 10 + 480 - 1),
+				.INIT_VSYNC_START	(0),
+				.INIT_VSYNC_END		(2),
+				.INIT_VSYNC_POL		(0)
+			)
+		i_vsync_generator
+			(
+				.reset				(video_reset),
+				.clk				(video_clk),
+				
+				.out_vsync			(vout_tgen_vsync),
+				.out_hsync			(vout_tgen_hsync),
+				.out_de				(vout_tgen_de),
+				
+				.s_wb_rst_i			(wb_rst_o),
+				.s_wb_clk_i			(wb_clk_o),
+				.s_wb_adr_i			(wb_host_adr_o[2 +: 8]),
+				.s_wb_dat_o			(wb_vsgen_dat_o),
+				.s_wb_dat_i			(wb_host_dat_o),
+				.s_wb_we_i			(wb_host_we_o),
+				.s_wb_sel_i			(wb_host_sel_o),
+				.s_wb_stb_i			(wb_vsgen_stb_i),
+				.s_wb_ack_o			(wb_vsgen_ack_o)
+			);
+	
+	
 	wire			vout_vsync;
 	wire			vout_hsync;
 	wire			vout_de;
@@ -610,16 +757,22 @@ module top
 	//  WISHBONE address decoder
 	// ----------------------------------------
 	
-	assign wb_dmar_stb_i = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4001_0);
-	assign wb_gpio_stb_i = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4002_1);
+	assign wb_vdmar_stb_i = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4001_0);
+	assign wb_vsgen_stb_i = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4001_1);
+	assign wb_vdmaw_stb_i = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4001_8);
+	assign wb_gpio_stb_i  = wb_host_stb_o & (wb_host_adr_o[31:12] == 20'h4002_1);
 	
-	assign wb_host_dat_i = wb_dmar_stb_i ? wb_dmar_dat_o :
-	                       wb_gpio_stb_i ? wb_gpio_dat_o :
-	                       32'h0000_0000;
+	assign wb_host_dat_i  = wb_vdmar_stb_i ? wb_vdmar_dat_o :
+	                        wb_vsgen_stb_i ? wb_vsgen_dat_o :
+	                        wb_vdmaw_stb_i ? wb_vdmaw_dat_o :
+	                        wb_gpio_stb_i  ? wb_gpio_dat_o :
+	                        32'h0000_0000;
 	
-	assign wb_host_ack_i = wb_dmar_stb_i ? wb_dmar_ack_o :
-	                       wb_gpio_stb_i ? wb_gpio_ack_o :
-	                       wb_host_stb_o;
+	assign wb_host_ack_i  = wb_vdmar_stb_i ? wb_vdmar_ack_o :
+	                        wb_vsgen_stb_i ? wb_vsgen_ack_o :
+	                        wb_vdmaw_stb_i ? wb_vdmaw_ack_o :
+	                        wb_gpio_stb_i  ? wb_gpio_ack_o :
+	                        wb_host_stb_o;
 	
 	
 	

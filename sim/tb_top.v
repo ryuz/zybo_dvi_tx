@@ -13,7 +13,8 @@ module tb_top();
 	
 	initial begin
 		$dumpfile("tb_top.vcd");
-		$dumpvars(0, tb_top);
+		$dumpvars(2, tb_top);
+		$dumpvars(0, tb_top.i_top.i_vsync_generator);
 	
 	#1000000
 		$finish;
