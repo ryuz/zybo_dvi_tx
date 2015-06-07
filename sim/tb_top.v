@@ -16,7 +16,7 @@ module tb_top();
 		$dumpvars(2, tb_top);
 		$dumpvars(0, tb_top.i_top.i_vsync_generator);
 	
-	#1000000
+	#10000000
 		$finish;
 	end
 

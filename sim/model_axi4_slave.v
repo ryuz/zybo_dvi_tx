@@ -187,7 +187,8 @@ module model_axi4_slave
 	
 	assign s_axi4_rid     = s_axi4_rvalid ? reg_arid : {AXI_ID_WIDTH{1'bx}};
 //	assign s_axi4_rdata   = (s_axi4_rvalid && ((reg_araddr >> AXI_DATA_SIZE) < MEM_SIZE)) ? mem[reg_araddr >> AXI_DATA_SIZE] : {AXI_DATA_WIDTH{1'bx}};
-	assign s_axi4_rdata   = mem[reg_araddr >> AXI_DATA_SIZE];
+//	assign s_axi4_rdata   = mem[reg_araddr >> AXI_DATA_SIZE];
+	assign s_axi4_rdata   = reg_araddr;
 	assign s_axi4_rresp   = s_axi4_rvalid ? 2'b00 : 2'bxx;
 	assign s_axi4_rlast   = s_axi4_rvalid ? reg_rlast : 1'bx;
 	assign s_axi4_rvalid  = reg_rvalid;

@@ -258,7 +258,7 @@ module vdma_axi4_to_axi4s_core
 						reg_rbusy <= 1'b0;
 					end
 				end
-			end			
+			end
 		end
 	end
 	
