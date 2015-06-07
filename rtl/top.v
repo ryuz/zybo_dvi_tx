@@ -184,7 +184,7 @@ module top
 				.s_axi4_mem00_rlast				(axi4_mem00_rlast),
 				.s_axi4_mem00_rvalid			(axi4_mem00_rvalid),
 				.s_axi4_mem00_rready			(axi4_mem00_rready),
-
+				
 				.DDR_addr						(DDR_addr),
 				.DDR_ba							(DDR_ba),
 				.DDR_cas_n						(DDR_cas_n),
@@ -295,39 +295,6 @@ module top
 				.wb_ack_o			(wb_gpio_ack_o)
 			);
 	
-	/*
-	gpo_axi4l
-			#(
-				.WIDTH							(4)
-			)
-		i_gpo_led
-			(
-				.s_axi4l_aresetn				(peri_aresetn),
-				.s_axi4l_aclk					(peri_aclk),
-				.s_axi4l_awaddr					(axi4l_peri00_awaddr),
-				.s_axi4l_awprot					(axi4l_peri00_awprot),
-				.s_axi4l_awvalid				(axi4l_peri00_awvalid),
-				.s_axi4l_awready				(axi4l_peri00_awready),
-				.s_axi4l_wstrb					(axi4l_peri00_wstrb),
-				.s_axi4l_wdata					(axi4l_peri00_wdata),
-				.s_axi4l_wvalid					(axi4l_peri00_wvalid),
-				.s_axi4l_wready					(axi4l_peri00_wready),
-				.s_axi4l_bresp					(axi4l_peri00_bresp),
-				.s_axi4l_bvalid					(axi4l_peri00_bvalid),
-				.s_axi4l_bready					(axi4l_peri00_bready),
-				.s_axi4l_araddr					(axi4l_peri00_araddr),
-				.s_axi4l_arprot					(axi4l_peri00_arprot),
-				.s_axi4l_arvalid				(axi4l_peri00_arvalid),
-				.s_axi4l_arready				(axi4l_peri00_arready),
-				.s_axi4l_rdata					(axi4l_peri00_rdata),
-				.s_axi4l_rresp					(axi4l_peri00_rresp),
-				.s_axi4l_rvalid					(axi4l_peri00_rvalid),
-				.s_axi4l_rready					(axi4l_peri00_rready),
-				
-				.out_data						(led)
-			);
-	*/
-	
 	
 	
 	// ----------------------------------------
@@ -378,7 +345,7 @@ module top
 				.V_WIDTH			(12),
 				.WB_ADR_WIDTH		(8),
 				.WB_DAT_WIDTH		(32),
-				.INIT_CTL_CONTROL	(2'b11),
+				.INIT_CTL_CONTROL	(2'b00),
 				.INIT_PARAM_ADDR	(32'h1800_0000),
 				.INIT_PARAM_STRIDE	(4096),
 				.INIT_PARAM_WIDTH	(640),
@@ -389,7 +356,7 @@ module top
 			(
 				.aresetn			(mem_aresetn),
 				.aclk				(mem_aclk),
-
+				
 				.m_axi4_awid		(axi4_mem00_awid),
 				.m_axi4_awaddr		(axi4_mem00_awaddr),
 				.m_axi4_awburst		(axi4_mem00_awburst),
@@ -417,7 +384,7 @@ module top
 				.s_axi4s_tdata		(axi4s_memw_tdata[23:0]),
 				.s_axi4s_tvalid		(axi4s_memw_tvalid),
 				.s_axi4s_tready		(axi4s_memw_tready),
-
+				
 				.s_wb_rst_i			(wb_rst_o),
 				.s_wb_clk_i			(wb_clk_o),
 				.s_wb_adr_i			(wb_host_adr_o[2 +: 8]),
@@ -506,69 +473,7 @@ module top
 				.s_wb_stb_i			(wb_vdmar_stb_i),
 				.s_wb_ack_o			(wb_vdmar_ack_o)
 		);
-		
-	/*
-	vdma_axi4_to_axi4s_core
-			#(
-				.AXI4_ID_WIDTH		(6),
-				.AXI4_ADDR_WIDTH	(32),
-				.AXI4_LEN_WIDTH		(8),
-				.AXI4_QOS_WIDTH		(4),
-				.AXI4S_USER_WIDTH	(1),
-				.AXI4S_DATA_WIDTH	(24),
-				.INDEX_WIDTH		(8),
-				.STRIDE_WIDTH		(12),
-				.H_WIDTH			(12),
-				.V_WIDTH			(12)
-			)
-		i_vdma_axi4_to_axi4s_core
-			(
-				.aresetn			(mem_aresetn),
-				.aclk				(mem_aclk),
-				
-				.ctl_enable			(1'b1),
-				.ctl_update			(1'b1),
-				.ctl_busy			(),
-				.ctl_index			(),
-				
-				.param_addr			(32'h0010_0000),
-				.param_stride		(640),
-				.param_width		(640),
-				.param_height		(480),
-				.param_arlen		(7),
-				
-				.monitor_addr		(),
-				.monitor_stride		(),
-				.monitor_width		(),
-				.monitor_height		(),
-				.monitor_arlen		(),
-				
-				.m_axi4_arid		(axi4_mem00_arid),
-				.m_axi4_araddr		(axi4_mem00_araddr),
-				.m_axi4_arburst		(axi4_mem00_arburst),
-				.m_axi4_arcache		(axi4_mem00_arcache),
-				.m_axi4_arlen		(axi4_mem00_arlen),
-				.m_axi4_arlock		(axi4_mem00_arlock),
-				.m_axi4_arprot		(axi4_mem00_arprot),
-				.m_axi4_arqos		(axi4_mem00_arqos),
-				.m_axi4_arregion	(axi4_mem00_arregion),
-				.m_axi4_arsize		(axi4_mem00_arsize),
-				.m_axi4_arvalid		(axi4_mem00_arvalid),
-				.m_axi4_arready		(axi4_mem00_arready),
-				.m_axi4_rid			(axi4_mem00_rid),
-				.m_axi4_rresp		(axi4_mem00_rresp),
-				.m_axi4_rdata		(axi4_mem00_rdata),
-				.m_axi4_rlast		(axi4_mem00_rlast),
-				.m_axi4_rvalid		(axi4_mem00_rvalid),
-				.m_axi4_rready		(axi4_mem00_rready),
-				
-				.m_axi4s_tuser		(axi4s_memr_tuser),
-				.m_axi4s_tlast		(axi4s_memr_tlast),
-				.m_axi4s_tdata		(axi4s_memr_tdata),
-				.m_axi4s_tvalid		(axi4s_memr_tvalid),
-				.m_axi4s_tready		(axi4s_memr_tready)
-			);
-	*/
+	
 	
 	wire	[0:0]			axi4s_vout_tuser;
 	wire					axi4s_vout_tlast;
@@ -597,25 +502,11 @@ module top
 				.rd_ready			(axi4s_vout_tready),
 				.rd_data_num		()
 			);
-
-	wire			vout_tgen_vsync;
-	wire			vout_tgen_hsync;
-	wire			vout_tgen_de;
 	
-	/*
-	pattern_gen
-		i_pattern_gen
-			(
-				.reset				(video_reset),
-				.clk				(video_clk),
-				
-				.vsync				(vout_tgen_vsync),
-				.hsync				(vout_tgen_hsync),
-				.de					(vout_tgen_de),
-				.data				()
-			);
-	*/
 	
+	wire					vout_vsgen_vsync;
+	wire					vout_vsgen_hsync;
+	wire					vout_vsgen_de;
 	
 	wire	[31:0]			wb_vsgen_dat_o;
 	wire					wb_vsgen_stb_i;
@@ -644,9 +535,9 @@ module top
 				.reset				(video_reset),
 				.clk				(video_clk),
 				
-				.out_vsync			(vout_tgen_vsync),
-				.out_hsync			(vout_tgen_hsync),
-				.out_de				(vout_tgen_de),
+				.out_vsync			(vout_vsgen_vsync),
+				.out_hsync			(vout_vsgen_hsync),
+				.out_de				(vout_vsgen_de),
 				
 				.s_wb_rst_i			(wb_rst_o),
 				.s_wb_clk_i			(wb_clk_o),
@@ -681,9 +572,9 @@ module top
 				.s_axi4s_tvalid		(axi4s_vout_tvalid),
 				.s_axi4s_tready		(axi4s_vout_tready),
 				
-				.in_vsync			(vout_tgen_vsync),
-				.in_hsync			(vout_tgen_hsync),
-				.in_de				(vout_tgen_de),
+				.in_vsync			(vout_vsgen_vsync),
+				.in_hsync			(vout_vsgen_hsync),
+				.in_de				(vout_vsgen_de),
 				.in_ctl				(4'd0),
 				
 				.out_vsync			(vout_vsync),
@@ -695,44 +586,13 @@ module top
 	
 	
 	// ----------------------------------------
-	//  HDMI -TX
+	//  HDMI-TX
 	// ----------------------------------------
 	
-	/*
-	wire			vsync;
-	wire			hsync;
-	wire			de;
-	wire	[23:0]	data;
-
-	pattern_gen
-//			#(
-//				// SXGA@75MHz
-//				.H_SYNC			(1),
-//				.H_VISIBLE		(1024),
-//				.H_FRONTPORCH	(24),
-//				.H_PULSE		(136),
-//				.H_BACKPORCH	(144),
-//				.V_SYNC			(1),
-//				.V_VISIBLE		(768),
-//				.V_FRONTPORCH	(3),
-//				.V_PULSE		(6),
-//				.V_BACKPORCH	(29)
-//			)
-		i_pattern_gen
-			(
-				.reset		(video_reset),
-				.clk		(video_clk),
-
-				.vsync		(vsync),
-				.hsync		(hsync),
-				.de			(de),
-				.data		(data)
-			);
-	*/
 	
-
+	
 	assign hdmi_out_en = 1'b1;
-
+	
 	dvi_tx
 		i_dvi_tx
 			(
@@ -793,6 +653,7 @@ module top
 	
 	assign pmod_a[0]   = wb_clk_o;
 	assign pmod_a[7:1] = reg_pmod_a[7:1];
+	
 	
 endmodule
 
