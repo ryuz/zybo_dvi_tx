@@ -163,7 +163,7 @@ module model_axi4_slave
 			if ( s_axi4_rvalid & s_axi4_rready ) begin
 				reg_araddr <= reg_araddr + (1 << AXI_DATA_SIZE);
 				reg_arlen  <= reg_arlen - 1'b1;
-				reg_rlast  <= (reg_arlen == 0);
+				reg_rlast  <= ((reg_arlen - 1'b1) == 0);
 				if ( reg_rlast ) begin
 					reg_arbusy <= 1'b0;
 					reg_rvalid <= 1'b0;

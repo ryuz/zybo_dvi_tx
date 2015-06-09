@@ -179,6 +179,10 @@ module vdma_axi4s_to_axi4_core
 			reg_wvlast       <= 1'bx;
 		end
 		else begin
+			if ( m_axi4_wready ) begin
+				reg_wvalid <= 1'b0;
+			end
+			
 			// enable
 			if ( !reg_busy || (!reg_skip && !reg_awbusy && !reg_wbusy) ) begin
 				if ( ctl_enable ) begin
@@ -204,7 +208,7 @@ module vdma_axi4s_to_axi4_core
 				if ( s_axi4s_tvalid && s_axi4s_tuser ) begin 
 					// frame start
 					reg_skip      <= 1'b0;
-
+					
 					// aw start
 					reg_awbusy    <= 1'b1;
 					reg_addr_base <= reg_param_addr + reg_param_stride;
@@ -222,7 +226,7 @@ module vdma_axi4s_to_axi4_core
 					reg_wlast     <= (reg_param_awlen == 0);
 					reg_wdata     <= s_axi4s_tdata;
 					reg_wvalid    <= s_axi4s_tvalid;
-
+					
 					reg_whcnt     <= init_whcnt;
 					reg_whlast    <= init_whlast;
 					reg_wvcnt     <= init_wvcnt;
@@ -256,9 +260,6 @@ module vdma_axi4s_to_axi4_core
 			end
 			
 			// wƒ`ƒƒƒlƒ‹§Œä
-			if ( m_axi4_wready ) begin
-				reg_wvalid <= 1'b0;
-			end
 			if ( reg_wbusy ) begin
 				if ( !m_axi4_wvalid || m_axi4_wready ) begin
 					reg_wvalid <= s_axi4s_tvalid;
@@ -266,7 +267,7 @@ module vdma_axi4s_to_axi4_core
 					if ( s_axi4s_tvalid ) begin
 						reg_wlast  <= next_wlast;
 						reg_wdata  <= s_axi4s_tdata;
-
+						
 						reg_wlen      <= reg_wlen - 1'b1;
 						if ( reg_wlen == 0 ) begin
 							reg_wlen      <= reg_param_awlen;
@@ -288,7 +289,7 @@ module vdma_axi4s_to_axi4_core
 						end
 					end
 				end
-			end			
+			end
 		end
 	end
 	
